@@ -5,6 +5,8 @@
   "main": "server.js",
   "dependencies": {
     "aws-sdk": "^2.4.10",
+    "basic-auth": "^1.0.4",
+    "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "nunjucks": "^2.4.2",
     "socket.io": "^1.4.8",

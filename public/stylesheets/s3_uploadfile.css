@@ -1,0 +1,29 @@
+.progress {
+    margin-bottom: 10px;
+}
+
+.L
+{
+/*                padding-left: 15px;*/
+    cursor: pointer; 
+}
+#file_tree li
+{
+    /*margin-left : 5px;*/ 
+/*                list-style-type: square;*/
+    list-style-position: inside;
+    list-style-image: url('/images/folder.png');
+}
+#file_tree .file
+{
+    list-style-position: inside;
+/*                list-style-type: circle;*/
+    list-style-image: url('/images/file.png');
+}
+#file_tree ul
+{
+
+    /*margin-left : 5px; */
+    list-style-type: none;
+    padding: 5px 5px 5px 20px;
+}

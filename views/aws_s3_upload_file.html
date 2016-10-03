@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ title }}</title>
+        
+        <!-- Kule lazy -->
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-lazy.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-base.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-grid.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-animates.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-theme-default.min.css" type="text/css" />
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/js/kule.urbrowser.min.js"></script>
+        
+        <!-- Socket io -->
+        <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.6/socket.io.min.js"></script>
+        <!-- Socket io stream -->
+        <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io-stream/0.9.0/socket.io-stream.min.js"></script>
+        
+        <script src="javascripts/folder_tree.js"></script>
+        
+        <script src="javascripts/copy_tooltip.js"></script>
+        
+        <link rel="stylesheet" href="stylesheets/s3_uploadfile.css" type="text/css" />
+        
+        <script>
+            
+            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }});
+            
+            socket.on('online', function(data){
+                document.getElementById('online').innerHTML = data.online;
+            });
+            
+            socket.on('disconnect', function(){
+                document.getElementById('status').innerHTML = '';
+                document.getElementById('status').innerHTML = 'Disconnect Server !!';
+                document.getElementById('modal').style.display = 'block';
+                document.getElementById('modal_bk').style.display = 'block';
+            });
+            
+            socket.on('connect_error', function(){
+                document.getElementById('status').innerHTML = '';
+                document.getElementById('status').innerHTML = 'Reconnect Server ...';
+                document.getElementById('modal').style.display = 'block';
+                document.getElementById('modal_bk').style.display = 'block';
+            });
+            
+            socket.on('connect', function(){
+                document.getElementById('status').innerHTML = '';
+                document.getElementById('modal').style.display = 'none';
+                document.getElementById('modal_bk').style.display = 'none';
+            });
+            
+            
+            socket.on('get_list', function(data){
+                
+                var file_tree = new main_GT(document.getElementById('file_tree'),'ushowgamefile','file_tree');
+
+                for(var key in data.get_list){
+
+                    var tmp = data.get_list[key].split('/');
+                    
+                    file_tree.addFolder(tmp);
+
+                } 
+                
+            });
+            
+            function get_file_info(file_path){
+                
+                socket.emit('get_file_info', { get_file_info:file_path });
+                
+                socket.once('even_file_info',function(msg){
+                    
+                    var file_info_html='' , file_type_demo='';
+                    
+                    var file_name = msg.file_name.split('/').pop();
+                    var file_type = file_name.split('.').pop();
+
+                    if(!file_name){
+                        file_info_html +='<li>Type : Folder</li>';
+                    }else{
+                        file_info_html +='<li>Name : '+file_name+'</li>';
+                        file_info_html +='<li>Type : '+file_type+'</li>';
+                    }
+                    
+                    file_info_html +='<li>Size : '+msg.file_size/1024+'KB</li>';
+                    file_info_html +='<li>LastModified : '+msg.file_LastModified+'</li>';
+                    
+                    if(file_name){
+                        file_info_html +='<li>public_url : <span id="motivatebox">'+msg.file_public_url+'</span></li>';
+                    }
+                                        
+                    if(file_type ==='mp3'){
+                        file_type_demo += '<audio controls>';
+                        file_type_demo += '    <source src="'+msg.file_public_url+'" type="audio/mpeg">';
+                        file_type_demo += '</audio>';
+                        
+                    }else if(file_type ==='png'){
+                        
+                        file_type_demo = '<img src="'+msg.file_public_url+'">';
+                        
+                    }
+                    
+                    document.getElementById('file_info').innerHTML = file_info_html;
+                    document.getElementById('file_demo').innerHTML = file_type_demo;
+                    
+                    if(file_name){
+                        var copy_tooltip = new copy_clipboard(document.getElementById('motivatebox'));
+                        copy_tooltip.addEL();
+                    }
+                    
+                });
+            }
+                        
+            function add_folder(){
+                
+                var file_path = document.getElementById('file_path').innerHTML;
+                var folder_name = document.getElementById('folder_name').value;
+                
+                var file = file_path.split('/').pop();
+
+                folder_name = folder_name.replace(/[\s\/]/g, '');
+                
+                if(folder_name){
+                    
+                    if(file.indexOf('.') == -1){
+                        socket.emit('add_folder', { add_folder : (file_path+folder_name+'/') });
+                        document.getElementById('folder_name').value = '';
+                    }else{
+                        alert('路徑錯誤!!');
+                    }
+                }else{
+                    alert('空!!');
+                }
+                
+            }
+            
+            function del_file(){
+                
+                var file_path = document.getElementById('file_path').innerHTML;
+
+                if (confirm("是否刪除? path=./"+file_path) == true) {
+                    
+                    socket.emit('del_file', { del_file:file_path });
+                    
+                }
+                
+            }
+            
+        </script>
+
+    </head>
+
+    <body>
+       
+       <div class="columns-12">
+
+            <div class="col-12">
+                <h1>{{ head }}</h1>
+                <h2>Online : <span id='online'></span></h2>
+            </div>
+            
+            <div class="col-3" style="height:80vh;overflow-y:auto;">
+                <div id="file_tree"></div>
+            </div>
+            
+            <div class="col-6">
+                <div class="columns-12">
+                   
+                    <div class="col-6">
+                        <a class="btn" onclick="del_file();">刪除檔案</a>
+                    </div>
+                    
+                    <div class="col-6">
+                        <div class="input-grp">
+                            <input type="text" class="ctrl-input" id="folder_name" />
+                            <span class="input-grp-btn">
+                                <a class="btn" onclick="add_folder();">建立資料夾</a>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <ul class="kui-list" id="file_info"></ul>
+                        <div id="file_demo"></div>    
+                    </div>
+                    
+                </div>
+            </div>
+                                    
+            <div class="col-3" style="position:fixed;right:0px;top: 40px;">
+                <span id="file_path" style="display:none"></span>
+                <ul class="crumb">
+                    <li class="crumb-text">您目前的位置：</li>
+                    <span id="path"></span>
+                </ul>
+                
+                <label for="file" class="ctrl-upload flex-media"  ondragover="dragoverHandler(event)" ondrop="dropHandler(event)" style="height:10vh;">
+                    <input type="file" id="file"  multiple/>
+                    <span class="ctrl-upload-caption">Upload File</span>
+                </label>
+                
+                <label>上傳佇列 : </label>
+                <div class="columns-12" id="pg" style="height:40vh;overflow-y:auto;">
+                                   
+                </div>
+<!--                <a class="btn color-focus focus" onclick="upload_file();">Upload</a>-->
+            </div>
+             
+        </div>
+        
+        <div class="modal" id="modal">
+            <div class="modal-box">
+                <p id="status"></p>
+            </div>
+        </div>
+        <div class="modal-overlay" id="modal_bk"></div>
+        
+    </body>
+    <script>
+        
+        var m_file, file_data=[], unlock=true, date;
+        
+        function dragoverHandler(e){
+            e.preventDefault() ; //防止瀏覽器執行預設動作
+        }
+        
+        function dropHandler(evt) {//evt 為 DragEvent 物件
+            evt.preventDefault();
+            
+            if(unlock){
+                
+                unlock = false;
+                
+                date = new Date().getTime();
+                
+                m_file = evt.dataTransfer.files;
+                
+                var file_path = document.getElementById('file_path').innerHTML;
+                var file = file_path.split('/').pop();
+                
+                if(file.indexOf('.') == -1){
+                    
+                    add_progress();
+                    
+                }else{
+                    alert('路徑錯誤!!');
+                }
+                
+                
+            }else{
+                alert('UpLoading');
+            }
+            
+        }
+        
+        document.getElementById('file').addEventListener("change", function(){
+            
+            if(unlock){
+                unlock = false;
+                
+                date = new Date().getTime();
+                
+                m_file = document.getElementById('file').files;
+                
+                var file_path = document.getElementById('file_path').innerHTML;
+                var file = file_path.split('/').pop();
+                
+                if(file.indexOf('.') == -1){
+                    
+                    add_progress();
+                    
+                }else{
+                    alert('路徑錯誤!!');
+                }
+                
+            }else{
+                alert('UpLoading');
+            }
+            
+        }); 
+        
+        function add_progress(){
+            
+            var html_pg = '';
+
+            for(var i=0; i<m_file.length; i++){
+                
+                
+                html_pg += '<div class="col-12">';
+                html_pg += '    <span>File : '+m_file[i].name+'</span>';
+                html_pg += '    <span class="pull-right">Size : '+(m_file[i].size/1024)+'KB</span>';
+
+                html_pg += '    <div class="progress">';
+                html_pg += '        <div class="progress-bar progress-bar-striped color-primary active" id="'+m_file[i].name+date+'" style="width: 0%;"></div>';
+                html_pg += '    </div>';
+                html_pg += '</div>';
+                
+                file_data[i] = m_file[i].name;
+            }
+
+            document.getElementById("pg").innerHTML += html_pg;
+            
+            var context_sh = document.getElementById('pg').scrollHeight;//取得高度
+                
+                document.getElementById('pg').scrollTop = context_sh; //至底
+            
+            upload_file();
+        }
+        
+        function upload_file(){
+            
+            if(m_file.length){
+                
+                var file_path = document.getElementById('file_path').innerHTML;
+                //console.log(file_path);
+                
+                var file = file_path.split('/').pop();
+                
+                socket.emit('upload_file_data', { filedata: file_data , file_path: file_path });
+
+                socket.once('even_file_end',function(){
+                    document.getElementById('file').value='';
+                });
+                    
+            }else{
+                alert('Choose File');
+            }
+            
+        }
+        
+        socket.on('even_file_upload',function(count){
+            
+            var stream = ss.createStream();
+
+            var count = count.fileCount;
+
+            ss(socket).emit('upload_file', stream);
+
+            var blobStream = ss.createBlobReadStream(m_file[count]);
+            var size = 0;
+
+            blobStream.on('data', function(chunk) {
+
+                size += chunk.length;
+
+                var file_stream = Math.floor(size / m_file[count].size * 100);
+
+                document.getElementById(m_file[count].name+date).style.width = file_stream + '%';
+
+                if(file_stream > 15){
+                    document.getElementById(m_file[count].name+date).innerHTML = file_stream + '%';
+                }else{
+                    document.getElementById(m_file[count].name+date).innerHTML = '';
+                }
+
+                //console.log(file_stream);
+            });
+
+            blobStream.on('end', function() {
+                console.log('file upload!!');
+                unlock = true;
+            });
+
+            blobStream.pipe(stream);
+            //console.log(socket,stream,file.size);
+        });
+        
+    </script>
+</html>

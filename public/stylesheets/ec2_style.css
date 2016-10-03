@@ -1,0 +1,104 @@
+textarea {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    line-height: 25px;
+    border: none;
+    width: 100%;
+}
+
+.wgt-tooltip 
+{
+    position: relative;
+    /*font-size: 14px;*/
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+}
+
+.wgt-center-hw
+{
+    display: flex;
+    align-items: center;
+    /*justify-content: center;*/
+}
+
+.wgt-tooltip .tooltip-main 
+{
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: 100%;
+    left: 0%;
+    top: 0%;
+}
+.wgt-tooltip .tip-area
+{
+    position: absolute;
+    left: 100%;
+    margin-left: 10px;
+    top: 0px;
+    width: 200%;
+    height: 100%;
+    background-color: red;
+    visibility: hidden;
+    display: flex;
+    align-items: center;
+}
+.wgt-tooltip .tooltiptext 
+{
+    max-width: 100%;
+    background-color: rgba(0,0,0,0.9);
+    color: #fff;
+    word-wrap: break-word;
+    font-size: 85%;
+    border-radius: 3px;
+    padding: 4px 5px;
+    z-index: 1;
+    transition: all 0.5s;
+    visibility: hidden;
+}
+.wgt-tooltip .ani-scale
+{
+    transform: scale(0,0);
+    transform-origin: 0% 50%;
+}
+.wgt-tooltip .ani-opacity
+{
+    opacity: 0;
+}
+.wgt-tooltip:hover .ani-scale
+{
+    transition: transform 0.4s cubic-bezier(.25,1.14,.68,1.43), opacity 0.7s;
+    visibility: visible;
+    transform: scale(1,1);
+}
+.wgt-tooltip:hover .ani-opacity
+{
+    transition: transform 0.4s cubic-bezier(.25,1.14,.68,1.43), opacity 0.7s;
+    visibility: visible;
+    opacity: 1;
+}
+.wgt-tooltip .tooltiptext::after 
+{
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    margin-top: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent rgba(0,0,0,0.9) transparent transparent;
+}
+.wgt-tooltip .tooltiptext::before
+{
+    content: attr(wgt-tip);
+    white-space: pre-line;
+}
+
+.tooltiptext a
+{
+    color: #A9F5F2;
+    text-decoration:none;
+}

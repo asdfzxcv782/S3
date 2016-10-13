@@ -2,10 +2,10 @@ var ss = require('socket.io-stream');
 var fs = require("fs");
 var s3_function = require('./s3_function.js');
 
-function s3Socket(sio,systemOption){
-    if (!(this instanceof s3Socket)) return new s3Socket(sio);
-    
+function s3Socket(sio, local, systemOption){
+        
     this.io = sio;
+    this.local = local;
     this.systemOption = systemOption;
     
     this.online = 0;
@@ -54,11 +54,11 @@ s3Socket.prototype.uploadFileData = function(socket, msg){
 
 s3Socket.prototype.uploadFileStream = function(socket, stream){
     
-    var file_stream =stream.pipe(fs.createWriteStream('./tmp/'+this.filedata[this.fileCount],{flags: 'a',encoding: 'utf8'}));
+    var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+this.filedata[this.fileCount],{flags: 'a',encoding: 'utf8'}));
 
     file_stream.on('close',function(){
 
-        var file_data_tmp_path = './tmp/'+this.filedata[this.fileCount];
+        var file_data_tmp_path = this.local+'/tmp/'+this.filedata[this.fileCount];
 
         var body = fs.createReadStream(file_data_tmp_path);
 

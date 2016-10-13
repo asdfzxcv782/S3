@@ -70,4 +70,4 @@ app.use(function(err, req, res, next) {
   });
 });
 
-var s3Socket = new s3Socket(io,systemOption);
+var s3Socket = new s3Socket(io, __dirname, systemOption);

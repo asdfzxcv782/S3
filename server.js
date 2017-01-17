@@ -1,3 +1,4 @@
+'use strict'; //use es6
 var nunjucks = require('nunjucks');
 var express = require('express');
 var bodyParser = require('body-parser');

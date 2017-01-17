@@ -1,14 +1,16 @@
+'use strict'; //use es6
+
 var AWS = require('aws-sdk');
 var aws_key = require('../config/aws_key.js');
 
 function s3_function(socket){
     this.sio = socket;
-    
+
     this.s3client = new AWS.S3({
         accessKeyId: aws_key.aws_ec2_s3_access,
         secretAccessKey: aws_key.aws_ec2_s3_passwd
     });
-    
+
 }
 
 /**
@@ -16,19 +18,19 @@ function s3_function(socket){
  * @param {string} bucket aws_s3
  */
 s3_function.prototype.get_game_file_list = function(bucket){
-    
+
     var params = {
-        Bucket:bucket        //required 
-    }
-    
+        Bucket:bucket        //required
+    };
+
     this.s3client.listObjects(params, function(err,data){
         if (err) {
             console.log("Error:", err);
         }else {
             var folder_list = [];
-                        
+
             for (var index in data.Contents) {
-                
+
                 var s3 = data.Contents[index];
 
                 folder_list.push(s3.Key);
@@ -36,14 +38,14 @@ s3_function.prototype.get_game_file_list = function(bucket){
             this.sio.emit('get_list', { get_list: folder_list });
         }
     }.bind(this));
-    
+
 };
 
 s3_function.prototype.get_file_info = function(bucket,file_path){
     var params = {
         Bucket:bucket,        //required
         Prefix:file_path
-    }
+    };
     this.s3client.listObjects(params, function(err,data){
         if (err) {
             console.log("Error:", err);
@@ -55,7 +57,7 @@ s3_function.prototype.get_file_info = function(bucket,file_path){
                 file_LastModified:data.Contents[0].LastModified,
                 file_public_url:'https://s3-ap-southeast-1.amazonaws.com/ushowgamefile/'+data.Contents[0].Key
             });
-            
+
         }
     }.bind(this));
 };
@@ -73,7 +75,7 @@ s3_function.prototype.add_folder = function(bucket,folder_path,callback){
     };
     this.s3client.putObject(params, function(err, data) {
       if (err){
-        console.log(err, err.stack); // an error occurred  
+        console.log(err, err.stack); // an error occurred
       }else{
         callback(true);           // successful response
       }
@@ -87,7 +89,7 @@ s3_function.prototype.add_folder = function(bucket,folder_path,callback){
  */
 s3_function.prototype.del_file = function(bucket,file_name,callback){
     //console.log(file_name)
-    
+
     var params = {
         Bucket: bucket,
         Prefix: file_name
@@ -95,7 +97,7 @@ s3_function.prototype.del_file = function(bucket,file_name,callback){
 
     this.s3client.listObjects(params, function(err, data) {
         if (err){
-            console.log(err, err.stack); // an error occurred  
+            console.log(err, err.stack); // an error occurred
         }
 
         params = {Bucket: bucket};
@@ -107,9 +109,9 @@ s3_function.prototype.del_file = function(bucket,file_name,callback){
 
         this.s3client.deleteObjects(params, function(err, data) {
             if (err){
-                console.log(err, err.stack); // an error occurred  
+                console.log(err, err.stack); // an error occurred
             }else{
-                //console.log('del file '+ file_name);           // successful response 
+                //console.log('del file '+ file_name);           // successful response
                 callback(true);
             }
         }.bind(this));
@@ -130,13 +132,27 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
       ACL: 'public-read',
       Body: streamObject
     };
-    
+
+    let file_type = file_name.split('.')[1];
+
+    switch (file_type) {
+      case 'png':
+          params.ContentType = 'image/png';
+      break;
+      case 'css':
+          params.ContentType = 'text/css';
+      break;
+      case 'js':
+          //params.ContentType = 'text/css';
+      break;
+    }
+
     this.s3client.putObject(params, function(err, data) {
       if (err){
-        console.log(err, err.stack); // an error occurred  
+        console.log(err, err.stack); // an error occurred
       }else{
         callback(true);           // successful response
-      }   
+      }
     }.bind(this));
 };
 
@@ -146,39 +162,39 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
  * @param {string} prefix local
  */
 s3_function.prototype.get_file_list = function(bucket,prefix){
-    
+
     var params = {
-        Bucket:bucket,        //required 
-        Prefix:prefix            //required 
-    }
-    
+        Bucket:bucket,        //required
+        Prefix:prefix            //required
+    };
+
     this.s3client.listObjects(params, function(err,data){
         if (err) {
             console.log("Error:", err);
         }else {
             var folder_list = {};
             var tmp_array =[];
-            
+
             for (var index in data.Contents) {
-                
+
                 var s3 = data.Contents[index];
-                
+
                 if(s3.Size > 0){
-                    
+
                     var tmp = s3.Key.split('/');
-                    
+
                     if(typeof(folder_list[tmp[tmp.length-2]])!=='object'){
                         folder_list[tmp[tmp.length-2]] = {list: []};
                     }
 
                     folder_list[tmp[tmp.length-2]].list.push(s3.Key);
                 }
-                
+
             }
             this.sio.emit('get_list', { get_list: JSON.stringify(folder_list) });
         }
     }.bind(this));
-    
+
 };
 
 module.exports = s3_function;

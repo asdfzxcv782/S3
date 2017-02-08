@@ -54,7 +54,17 @@
                 document.getElementById('modal_bk').style.display = 'none';
             });
 
+            socket.on('err', function(err){
+                alert(err.errCode);
+            });
+
             socket.on('get_buckets_list', function(data){
+
+                let dom = document.getElementById('bucketName');
+
+                if(dom.children.length>1){
+                    dom.removeChild(dom.children[1]);
+                }
 
                 let menuUL = document.createElement('ul');
                     menuUL.className = 'drop-box menu';
@@ -76,7 +86,7 @@
                     menuUL.appendChild(menuLI);
                 }
 
-                document.getElementById('bucketName').appendChild(menuUL);
+                dom.appendChild(menuUL);
             });
 
             socket.on('get_list', function(data){
@@ -92,6 +102,19 @@
                 }
 
             });
+
+            function add_bucket() {
+
+                var add_bucket_name = document.getElementById('addBucket').value.replace(/[\s\/]/g, '');
+
+                if(add_bucket_name){
+                    if (confirm("是否新增庫："+ add_bucket_name) == true) {
+                        socket.emit('add_bucket', { add_bucket : add_bucket_name });
+                    }
+                }else{
+                    alert('空!!');
+                }
+            }
 
             function get_file_info(file_path){
 
@@ -179,7 +202,7 @@
 
     </head>
 
-    <body>
+    <body style="background-color: rgb(150,150,150);">
 
        <div class="columns-12">
 
@@ -189,14 +212,23 @@
             </div>
 
             <div class="col-3" style="height:80vh;overflow-y:auto;">
+                <div class="columns-12">
 
-                <div class="drop drop-hover" id="bucketName">
-                    <a class="btn">Bucket Name <span class="caret"></span></a>
-                    <!-- <ul class="drop-box menu" >
-                        <li class="menu-item"><a class="menu-link">Item1</a></li>
-                        <li class="menu-item"><a class="menu-link">Item2</a></li>
-                        <li class="menu-item"><a class="menu-link">Item3</a></li>
-                    </ul> -->
+                    <div class="col-6">
+                        <div class="input-grp">
+                            <input type="text" class="ctrl-input" id="addBucket" />
+                            <span class="input-grp-btn">
+                                <a class="btn" onclick="add_bucket();" >建立庫</a>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="drop drop-hover" id="bucketName">
+                            <a class="btn">Bucket Name <span class="caret"></span></a>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div id="file_tree" style="padding-top:10px;"></div>

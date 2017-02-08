@@ -33,6 +33,8 @@ s3Socket.prototype.socketHandler = function(socket){
         this.s3.get_game_file_list(data.setBucketName);
     }.bind(this));
 
+    socket.on('add_bucket', this.addBucket.bind(this, socket));
+
     socket.on('upload_file_data', this.uploadFileData.bind(this, socket));
 
     ss(socket).on('upload_file', this.uploadFileStream.bind(this, socket));
@@ -94,6 +96,16 @@ s3Socket.prototype.uploadFileStream = function(socket, stream){
 
         }.bind(this));
 
+    }.bind(this));
+};
+
+s3Socket.prototype.addBucket = function (socket, msg) {
+    this.s3.createBucket(msg.add_bucket, function(data, err){
+        if(data){
+            this.s3.getAllBucket();
+        }else{
+            socket.emit('err', { errCode: err });
+        }
     }.bind(this));
 };
 

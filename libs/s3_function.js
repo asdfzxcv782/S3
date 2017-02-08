@@ -12,7 +12,9 @@ function s3_function(socket){
     });
 
 }
-
+/**
+ * getAllBuckets Name
+ */
 s3_function.prototype.getAllBucket = function () {
     this.s3client.listBuckets(function(err, data) {
         if (err){
@@ -25,6 +27,32 @@ s3_function.prototype.getAllBucket = function () {
             }
 
             this.sio.emit('get_buckets_list', { get_buckets_list: bucket_list });
+        }
+    }.bind(this));
+};
+
+s3_function.prototype.createBucket = function (bucketName, callback) {
+
+    let params = {
+        Bucket: bucketName, /* required */
+        ACL: 'public-read',
+        CreateBucketConfiguration: {
+            LocationConstraint: 'ap-southeast-1'
+        },
+        // GrantFullControl: 'STRING_VALUE',
+        // GrantRead: 'STRING_VALUE',
+        // GrantReadACP: 'STRING_VALUE',
+        // GrantWrite: 'STRING_VALUE',
+        // GrantWriteACP: 'STRING_VALUE'
+    };
+
+    this.s3client.createBucket(params, function(err, data) {
+        if (err) {
+            //console.log("Error:", err.code);
+            callback(false, err.code);
+        }else {
+            console.log(data);           // successful response
+            callback(true, null);
         }
     }.bind(this));
 };
@@ -67,14 +95,14 @@ s3_function.prototype.get_file_info = function(bucket,file_path){
         if (err) {
             console.log("Error:", err);
         }else {
-            //console.log(data)
-            this.sio.emit('even_file_info', {
-                file_name:data.Contents[0].Key,
-                file_size: data.Contents[0].Size,
-                file_LastModified:data.Contents[0].LastModified,
-                file_public_url:'https://s3-ap-southeast-1.amazonaws.com/ushowgamefile/'+data.Contents[0].Key
-            });
-
+            if(data.Contents.length){
+                this.sio.emit('even_file_info', {
+                    file_name:data.Contents[0].Key,
+                    file_size: data.Contents[0].Size,
+                    file_LastModified:data.Contents[0].LastModified,
+                    file_public_url:'https://s3-ap-southeast-1.amazonaws.com/ushowgamefile/'+data.Contents[0].Key
+                });
+            }
         }
     }.bind(this));
 };

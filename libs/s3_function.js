@@ -13,6 +13,22 @@ function s3_function(socket){
 
 }
 
+s3_function.prototype.getAllBucket = function () {
+    this.s3client.listBuckets(function(err, data) {
+        if (err){
+            console.log("Error:", err);
+        }else{
+            let bucket_list = [];
+
+            for (let index=0; index<data.Buckets.length; index++) {
+                bucket_list.push(data.Buckets[index].Name);
+            }
+
+            this.sio.emit('get_buckets_list', { get_buckets_list: bucket_list });
+        }
+    }.bind(this));
+};
+
 /**
  * game_list css & pic file
  * @param {string} bucket aws_s3
@@ -20,16 +36,17 @@ function s3_function(socket){
 s3_function.prototype.get_game_file_list = function(bucket){
 
     var params = {
-        Bucket:bucket        //required
+        Bucket:bucket,        //required
     };
 
+    //this.s3client.listObjectsV2(params, function(err,data){
     this.s3client.listObjects(params, function(err,data){
         if (err) {
             console.log("Error:", err);
         }else {
             var folder_list = [];
 
-            for (var index in data.Contents) {
+            for (var index=0; index<data.Contents.length; index++) {
 
                 var s3 = data.Contents[index];
 

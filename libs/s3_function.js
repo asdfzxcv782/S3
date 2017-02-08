@@ -100,7 +100,7 @@ s3_function.prototype.get_file_info = function(bucket,file_path){
                     file_name:data.Contents[0].Key,
                     file_size: data.Contents[0].Size,
                     file_LastModified:data.Contents[0].LastModified,
-                    file_public_url:'https://s3-ap-southeast-1.amazonaws.com/ushowgamefile/'+data.Contents[0].Key
+                    file_public_url:'https://s3-ap-southeast-1.amazonaws.com/'+ bucket +'/'+data.Contents[0].Key
                 });
             }
         }

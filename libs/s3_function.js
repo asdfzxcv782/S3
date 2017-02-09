@@ -31,6 +31,11 @@ s3_function.prototype.getAllBucket = function () {
     }.bind(this));
 };
 
+/**
+ * createBucket
+ * @param  {string}   bucketName bucketName
+ * @param  {Function} callback   callback
+ */
 s3_function.prototype.createBucket = function (bucketName, callback) {
 
     let params = {
@@ -51,10 +56,53 @@ s3_function.prototype.createBucket = function (bucketName, callback) {
             //console.log("Error:", err.code);
             callback(false, err.code);
         }else {
-            console.log(data);           // successful response
+            this.addBucketCros(bucketName);
             callback(true, null);
         }
     }.bind(this));
+};
+
+// <CORSConfiguration>
+// <CORSRule>
+//     <AllowedOrigin>*</AllowedOrigin>
+//     <AllowedMethod>GET</AllowedMethod>
+//     <MaxAgeSeconds>3000</MaxAgeSeconds>
+//     <AllowedHeader>Authorization</AllowedHeader>
+// </CORSRule>
+// </CORSConfiguration>
+
+/**
+ * addBucketCros
+ * @param {string} bucketName bucketName
+ */
+s3_function.prototype.addBucketCros = function (bucketName) {
+    var params = {
+        Bucket: bucketName, /* required */
+        CORSConfiguration: { /* required */
+        CORSRules: [{
+            AllowedMethods: [
+                'GET',
+            ],
+            AllowedOrigins: [
+                '*',
+            ],
+            AllowedHeaders: [
+                'Authorization',
+            ],
+            // ExposeHeaders: [
+            //     'STRING_VALUE',
+            //     /* more items */
+            // ],
+            MaxAgeSeconds: 3000
+        },
+        ]},
+        // ContentMD5: 'STRING_VALUE'
+    };
+    this.s3client.putBucketCors(params, function(err, data) {
+        if(err){
+            console.log(err, err.code); // an error occurred
+        }
+    });
 };
 
 /**

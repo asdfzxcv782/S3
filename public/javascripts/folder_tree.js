@@ -1,3 +1,4 @@
+"use strict"; //use es6
 function main_GT(pele,index_name,div)
 {
     document.getElementById(div).innerHTML = '';
@@ -16,7 +17,7 @@ function main_GT(pele,index_name,div)
     this.folder = new folder_GT(this.folderPath, index_name, [index_name], this);
 }
 
-main_GT.prototype = 
+main_GT.prototype =
 {
     addFolder: function(array)
     {
@@ -53,7 +54,7 @@ main_GT.prototype =
         document.getElementById('file_path').innerHTML = file_path;
         document.getElementById('path').innerHTML = path_html;
     }
-}
+};
 
 function folder_GT(pele, name, path, main,  file)
 {
@@ -110,13 +111,13 @@ folder_GT.prototype =
     {
         var x = array.shift();
 
-        if(x != undefined)
+        if(x !== undefined)
         {
             var xxx = this.path.slice(0);
             xxx.push(x);
-            if(array[0] != undefined )
+            if(array[0] !== undefined )
             {
-                if(this.subFolder[x] == undefined)
+                if(this.subFolder[x] === undefined)
                 {
                     this.folderArea.style.display = 'block';
                     //this.subFolder[x] = new folder_GT(this.folderArea, x, this.path + x + '/', this.main);
@@ -124,9 +125,9 @@ folder_GT.prototype =
                 }
                 this.subFolder[x].add(array);
             }
-            else if(x != '')
+            else if(x !== '')
             {
-                if(this.subFile[x] == undefined )
+                if(this.subFile[x] === undefined )
                 {
                     this.fileArea.style.display = 'block';
                     //this.subFile[x] = new folder_GT(this.fileArea, x, this.path + x , this.main, true);
@@ -135,4 +136,4 @@ folder_GT.prototype =
             }
         }
     },
-}
+};

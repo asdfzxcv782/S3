@@ -168,9 +168,10 @@ s3_function.prototype.add_folder = function(bucket,folder_path,callback){
     };
     this.s3client.putObject(params, function(err, data) {
       if (err){
-        console.log(err, err.stack); // an error occurred
+          callback(false, err.code);
+        // console.log(err, err.stack); // an error occurred
       }else{
-        callback(true);           // successful response
+          callback(true, null);           // successful response
       }
     }.bind(this));
 };
@@ -202,7 +203,8 @@ s3_function.prototype.del_file = function(bucket,file_name,callback){
 
         this.s3client.deleteObjects(params, function(err, data) {
             if (err){
-                console.log(err, err.stack); // an error occurred
+                // console.log(err, err.stack); // an error occurred
+                callback(false, err.code);
             }else{
                 //console.log('del file '+ file_name);           // successful response
                 callback(true);

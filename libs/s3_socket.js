@@ -41,9 +41,9 @@ s3Socket.prototype.socketHandler = function(socket){
 
     socket.on('get_file_info', this.getFileInfo.bind(this));
 
-    socket.on('add_folder', this.addFolder.bind(this));
+    socket.on('add_folder', this.addFolder.bind(this, socket));
 
-    socket.on('del_file', this.delFile.bind(this));
+    socket.on('del_file', this.delFile.bind(this, socket));
 
     socket.on('disconnect', this.disconnect.bind(this));
 };
@@ -113,18 +113,22 @@ s3Socket.prototype.getFileInfo = function(msg){
     this.s3.get_file_info(this.bucketName, msg.get_file_info);
 };
 
-s3Socket.prototype.addFolder = function(msg){
-    this.s3.add_folder(this.bucketName, msg.add_folder,function(data){
+s3Socket.prototype.addFolder = function(socket, msg){
+    this.s3.add_folder(this.bucketName, msg.add_folder, function(data, err){
         if(data){
             this.s3.get_game_file_list(this.bucketName);
+        }else{
+            socket.emit('err', { errCode: err });
         }
     }.bind(this));
 };
 
-s3Socket.prototype.delFile = function(msg){
-    this.s3.del_file(this.bucketName, msg.del_file,function(data){
+s3Socket.prototype.delFile = function(socket, msg){
+    this.s3.del_file(this.bucketName, msg.del_file,function(data, err){
         if(data){
             this.s3.get_game_file_list(this.bucketName);
+        }else{
+            socket.emit('err', { errCode: err });
         }
     }.bind(this));
 };

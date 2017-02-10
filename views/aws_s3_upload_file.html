@@ -21,6 +21,9 @@
         <!-- iconfont -->
         <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
 
+        <!-- browserMessage -->
+        <script type="text/javascript" src="javascripts/browserMessage.js"></script>
+
         <script src="javascripts/folder_tree.js"></script>
 
         <script src="javascripts/copy_tooltip.js"></script>
@@ -58,7 +61,7 @@
             });
 
             socket.on('err', function(err){
-                alert(err.errCode);
+                browserMessage('錯誤', err.errCode);
             });
 
             socket.on('get_buckets_list', function(data){
@@ -115,11 +118,11 @@
                 var add_bucket_name = document.getElementById('addBucket').value.replace(/[\s\/]/g, '');
 
                 if(add_bucket_name){
-                    if (confirm("是否新增庫："+ add_bucket_name) == true) {
+                    if (confirm("是否新增桶："+ add_bucket_name) == true) {
                         socket.emit('add_bucket', { add_bucket : add_bucket_name });
                     }
                 }else{
-                    alert('空!!');
+                    browserMessage('新增桶錯誤', '空！！');
                 }
             }
 
@@ -185,10 +188,10 @@
                         socket.emit('add_folder', { add_folder : (file_path+folder_name+'/') });
                         document.getElementById('folder_name').value = '';
                     }else{
-                        alert('路徑錯誤!!');
+                        browserMessage('新增資料夾錯誤', '路徑錯誤！！');
                     }
                 }else{
-                    alert('空!!');
+                    browserMessage('新增資料夾錯誤', '空！！');
                 }
 
             }
@@ -225,7 +228,7 @@
                         <div class="input-grp">
                             <input type="text" class="ctrl-input" id="addBucket" />
                             <span class="input-grp-btn">
-                                <a class="btn" onclick="add_bucket();" >建立庫</a>
+                                <a class="btn" onclick="add_bucket();" >建立桶</a>
                             </span>
                         </div>
                     </div>
@@ -321,12 +324,12 @@
                     add_progress();
 
                 }else{
-                    alert('路徑錯誤!!');
+                    browserMessage('上傳錯誤', '路徑錯誤！！');
                 }
 
 
             }else{
-                alert('UpLoading');
+                browserMessage('上傳', '上傳中！！');
             }
 
         }
@@ -348,11 +351,11 @@
                     add_progress();
 
                 }else{
-                    alert('路徑錯誤!!');
+                    browserMessage('上傳錯誤', '路徑錯誤！！');
                 }
 
             }else{
-                alert('UpLoading');
+                browserMessage('上傳', '上傳中！！');
             }
 
         });
@@ -401,7 +404,7 @@
                 });
 
             }else{
-                alert('Choose File');
+                browserMessage('上傳錯誤', '選擇檔案！！');
             }
 
         }

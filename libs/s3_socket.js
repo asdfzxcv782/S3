@@ -17,6 +17,7 @@ function s3Socket(sio, local, systemOption){
     this.file_path='';
 
     this.server = this.io.on('connection', this.socketHandler.bind(this));
+
 }
 
 s3Socket.prototype.socketHandler = function(socket){
@@ -26,7 +27,22 @@ s3Socket.prototype.socketHandler = function(socket){
 
     this.s3 = new s3_function(socket);
 
-    this.s3.getAllBucket();
+    this.s3.getAllBucket(function(data){
+        // console.log(data);
+        //
+        // let bucketChat = [];
+        //
+        // for (let i = 0; i < data.length; i++) {
+        //     let chat = this.io.of(data[i]).on('connection', function(){
+        //
+        //     });
+        //
+        //     bucketChat.push(chat);
+        // }
+
+
+        socket.emit('get_buckets_list', { get_buckets_list: data });
+    }.bind(this));
 
     socket.on('setBucketName', function(data){
         this.bucketName = data.setBucketName;

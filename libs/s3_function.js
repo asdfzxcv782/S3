@@ -15,7 +15,7 @@ function s3_function(socket){
 /**
  * getAllBuckets Name
  */
-s3_function.prototype.getAllBucket = function () {
+s3_function.prototype.getAllBucket = function (callback) {
     this.s3client.listBuckets(function(err, data) {
         if (err){
             console.log("Error:", err);
@@ -25,8 +25,8 @@ s3_function.prototype.getAllBucket = function () {
             for (let index=0; index<data.Buckets.length; index++) {
                 bucket_list.push(data.Buckets[index].Name);
             }
-
-            this.sio.emit('get_buckets_list', { get_buckets_list: bucket_list });
+            callback(bucket_list);
+            // this.sio.emit('get_buckets_list', { get_buckets_list: bucket_list });
         }
     }.bind(this));
 };

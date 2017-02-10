@@ -244,9 +244,10 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
 
     this.s3client.putObject(params, function(err, data) {
       if (err){
-        console.log(err, err.stack); // an error occurred
+        // console.log(err, err.stack); // an error occurred
+        callback(true, err.code);           // successful response
       }else{
-        callback(true);           // successful response
+        callback(true, null);           // successful response
       }
     }.bind(this));
 };

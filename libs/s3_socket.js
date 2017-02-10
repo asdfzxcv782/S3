@@ -70,12 +70,15 @@ s3Socket.prototype.uploadFileStream = function(socket, stream){
 
         var body = fs.createReadStream(file_data_tmp_path);
 
-        this.s3.upload_gmae_file(this.bucketName,(this.file_path + this.filedata[this.fileCount]),body,function(even){
+        this.s3.upload_gmae_file(this.bucketName,(this.file_path + this.filedata[this.fileCount]),body,function(even, err){
+            if(err){
+                socket.emit('err', { errCode: err });
+            }
             if(even){
                 fs.unlink(file_data_tmp_path);
                 console.log('del tmp file : ' + file_data_tmp_path);
             }
-
+            
             this.s3.get_game_file_list(this.bucketName);
 
         }.bind(this));

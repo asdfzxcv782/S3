@@ -257,7 +257,7 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
  * @param {string} bucket aws_s3
  * @param {string} prefix local
  */
-s3_function.prototype.get_file_list = function(bucket,prefix){
+s3_function.prototype.get_file_list = function(bucket,prefix, callback){
 
     var params = {
         Bucket:bucket,        //required
@@ -287,7 +287,8 @@ s3_function.prototype.get_file_list = function(bucket,prefix){
                 }
 
             }
-            this.sio.emit('get_list', { get_list: JSON.stringify(folder_list) });
+            callback(folder_list);
+            //this.sio.emit('get_list', { get_list: JSON.stringify(folder_list) });
         }
     }.bind(this));
 

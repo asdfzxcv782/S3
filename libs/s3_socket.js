@@ -39,7 +39,7 @@ s3Socket.prototype.socketHandler = function(socket){
 
     ss(socket).on('upload_file', this.uploadFileStream.bind(this, socket));
 
-    socket.on('get_file_info', this.getFileInfo.bind(this));
+    socket.on('get_file_info', this.getFileInfo.bind(this, socket));
 
     socket.on('add_folder', this.addFolder.bind(this, socket));
 
@@ -78,7 +78,7 @@ s3Socket.prototype.uploadFileStream = function(socket, stream){
                 fs.unlink(file_data_tmp_path);
                 console.log('del tmp file : ' + file_data_tmp_path);
             }
-            
+
             this.s3.get_game_file_list(this.bucketName);
 
         }.bind(this));
@@ -112,8 +112,10 @@ s3Socket.prototype.addBucket = function (socket, msg) {
     }.bind(this));
 };
 
-s3Socket.prototype.getFileInfo = function(msg){
-    this.s3.get_file_info(this.bucketName, msg.get_file_info);
+s3Socket.prototype.getFileInfo = function(socket, msg){
+    this.s3.get_file_info(this.bucketName, msg.get_file_info, function(data){
+        socket.emit('get_list', { get_list: JSON.stringify(data) });
+    }.bind(this));
 };
 
 s3Socket.prototype.addFolder = function(socket, msg){

@@ -4,7 +4,7 @@ var AWS = require('aws-sdk');
 var aws_key = require('../config/aws_key.js');
 
 function s3_function(socket){
-    this.sio = socket;
+    // this.sio = socket;
 
     this.s3client = new AWS.S3({
         accessKeyId: aws_key.aws_ec2_s3_access,
@@ -109,7 +109,7 @@ s3_function.prototype.addBucketCros = function (bucketName) {
  * game_list css & pic file
  * @param {string} bucket aws_s3
  */
-s3_function.prototype.get_game_file_list = function(bucket){
+s3_function.prototype.get_game_file_list = function(bucket, callback){
 
     var params = {
         Bucket:bucket,        //required
@@ -128,13 +128,14 @@ s3_function.prototype.get_game_file_list = function(bucket){
 
                 folder_list.push(s3.Key);
             }
-            this.sio.emit('get_list', { get_list: folder_list });
+            callback(folder_list);
+            // this.sio.emit('get_list', { get_list: folder_list });
         }
     }.bind(this));
 
 };
 
-s3_function.prototype.get_file_info = function(bucket,file_path){
+s3_function.prototype.get_file_info = function(bucket,file_path, callback){
     var params = {
         Bucket:bucket,        //required
         Prefix:file_path
@@ -144,12 +145,18 @@ s3_function.prototype.get_file_info = function(bucket,file_path){
             console.log("Error:", err);
         }else {
             if(data.Contents.length){
-                this.sio.emit('even_file_info', {
+                callback({
                     file_name:data.Contents[0].Key,
                     file_size: data.Contents[0].Size,
                     file_LastModified:data.Contents[0].LastModified,
                     file_public_url:'https://s3-ap-southeast-1.amazonaws.com/'+ bucket +'/'+data.Contents[0].Key
                 });
+                // this.sio.emit('even_file_info', {
+                //     file_name:data.Contents[0].Key,
+                //     file_size: data.Contents[0].Size,
+                //     file_LastModified:data.Contents[0].LastModified,
+                //     file_public_url:'https://s3-ap-southeast-1.amazonaws.com/'+ bucket +'/'+data.Contents[0].Key
+                // });
             }
         }
     }.bind(this));

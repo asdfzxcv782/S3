@@ -20,30 +20,9 @@ function s3Socket(sio, local, systemOption){
 
     this.s3.getAllBucket(function(data){
         this.allbucket = data;
-        this.bucketChat = [];
 
         for (let i = 0; i < data.length; i++) {
-            let chat = this.io.of('/'+data[i]).on('connection', function(socket){
-
-                this.systemOption.logs({ status:"User", msg:"connected Bucket:"+ data[i] });
-
-                socket.on('upload_file_data', this.uploadFileData.bind(this, socket));
-
-                ss(socket).on('upload_file', this.uploadFileStream.bind(this, data[i], chat, socket));
-
-                socket.on('get_file_info', this.getFileInfo.bind(this, data[i], socket));
-
-                socket.on('add_folder', this.addFolder.bind(this, data[i], chat, socket));
-
-                socket.on('del_file', this.delFile.bind(this, data[i], chat, socket));
-
-                socket.on('disconnect', function(){
-                    this.systemOption.logs({ status:"User", msg:"disconnected Bucket:"+ data[i] });
-                }.bind(this));
-
-            }.bind(this));
-
-            this.bucketChat.push(chat);
+            this.initChat(data[i]);
         }
     }.bind(this));
 
@@ -68,6 +47,28 @@ s3Socket.prototype.socketHandler = function(socket){
     socket.on('disconnect', this.disconnect.bind(this));
 };
 
+s3Socket.prototype.initChat = function (bucketName) {
+    let chat = this.io.of('/'+bucketName).on('connection', function(socket){
+
+        this.systemOption.logs({ status:"User", msg:"connected Bucket:"+ bucketName });
+
+        socket.on('upload_file_data', this.uploadFileData.bind(this, socket));
+
+        ss(socket).on('upload_file', this.uploadFileStream.bind(this, bucketName, chat, socket));
+
+        socket.on('get_file_info', this.getFileInfo.bind(this, bucketName, socket));
+
+        socket.on('add_folder', this.addFolder.bind(this, bucketName, chat, socket));
+
+        socket.on('del_file', this.delFile.bind(this, bucketName, chat, socket));
+
+        socket.on('disconnect', function(){
+            this.systemOption.logs({ status:"User", msg:"disconnected Bucket:"+ bucketName });
+        }.bind(this));
+
+    }.bind(this));
+};
+
 s3Socket.prototype.uploadFileData = function(socket, msg){
 
     this.fileCount = 0; //重置
@@ -82,13 +83,24 @@ s3Socket.prototype.uploadFileData = function(socket, msg){
 
 s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 
-    var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+this.filedata[this.fileCount],{flags: 'a',encoding: 'utf8'}));
+    let n = Date.now();
+    let x = Math.floor((Math.random() * 10000) + 1);
+
+    let type = this.filedata[this.fileCount].split(".")[1];
+    let tmpFileName = n+x+'.'+type;
+
+    var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+tmpFileName,{flags: 'a',encoding: 'utf8'}));
+    // var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+this.filedata[this.fileCount],{flags: 'a',encoding: 'utf8'}));
 
     file_stream.on('close',function(){
 
-        var file_data_tmp_path = this.local+'/tmp/'+this.filedata[this.fileCount];
+        var file_data_tmp_path = this.local+'/tmp/'+tmpFileName;
+
+        // var file_data_tmp_path = this.local+'/tmp/'+this.filedata[this.fileCount];
 
         var body = fs.createReadStream(file_data_tmp_path);
+
+        console.log(this.file_path, this.filedata[this.fileCount]);
 
         this.s3.upload_gmae_file(bucket,(this.file_path + this.filedata[this.fileCount]),body,function(even, err){
             if(err){
@@ -127,27 +139,7 @@ s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 s3Socket.prototype.addBucket = function (socket, msg) {
     this.s3.createBucket(msg.add_bucket, function(data, err){
         if(data){
-            let chat = this.io.of(msg.add_bucket).on('connection', function(socket){
-
-                this.systemOption.logs({ status:"User", msg:"connected Bucket:"+ data });
-
-                socket.on('upload_file_data', this.uploadFileData.bind(this, socket));
-
-                ss(socket).on('upload_file', this.uploadFileStream.bind(this, data, socket));
-
-                socket.on('get_file_info', this.getFileInfo.bind(this, data, socket));
-
-                socket.on('add_folder', this.addFolder.bind(this, data, chat, socket));
-
-                socket.on('del_file', this.delFile.bind(this, data, chat, socket));
-
-                socket.on('disconnect', function(){
-                    this.systemOption.logs({ status:"User", msg:"disconnected Bucket:"+ data });
-                }.bind(this));
-
-            }.bind(this));
-
-            this.bucketChat.push(chat);
+            this.initChat(msg.add_bucket);
 
             this.s3.getAllBucket(function(data){
                 this.allbucket = data;

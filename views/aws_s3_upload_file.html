@@ -32,7 +32,8 @@
 
         <script>
 
-            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }});
+            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/server');
+            var socket2= null;
 
             var bucketName='';
 
@@ -89,6 +90,61 @@
                         menuA.onclick = (e)=>{
                             bucketName = e.target.innerHTML;
                             socket.emit('setBucketName', { setBucketName:bucketName });
+                            if(socket2){
+                                socket2.disconnect();
+                            }
+                            socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/'+bucketName);
+
+                            socket2.on('get_list', function(data){
+
+                                var file_tree = new main_GT(document.getElementById('file_tree'), bucketName, 'file_tree');
+
+                                for(var key in data.get_list){
+
+                                    var tmp = data.get_list[key].split('/');
+
+                                    file_tree.addFolder(tmp);
+
+                                }
+
+                            });
+
+                            socket2.on('even_file_upload',function(count){
+
+                                var stream = ss.createStream();
+
+                                var count = count.fileCount;
+
+                                ss(socket2).emit('upload_file', stream);
+
+                                var blobStream = ss.createBlobReadStream(m_file[count]);
+                                var size = 0;
+
+                                blobStream.on('data', function(chunk) {
+
+                                    size += chunk.length;
+
+                                    var file_stream = Math.floor(size / m_file[count].size * 100);
+
+                                    document.getElementById(m_file[count].name+date).style.width = file_stream + '%';
+
+                                    if(file_stream > 15){
+                                        document.getElementById(m_file[count].name+date).innerHTML = file_stream + '%';
+                                    }else{
+                                        document.getElementById(m_file[count].name+date).innerHTML = '';
+                                    }
+
+                                    //console.log(file_stream);
+                                });
+
+                                blobStream.on('end', function() {
+                                    console.log('file upload!!');
+                                    unlock = true;
+                                });
+
+                                blobStream.pipe(stream);
+                                //console.log(socket,stream,file.size);
+                            });
                         };
 
                     // menuLI.appendChild(icon);
@@ -128,9 +184,9 @@
 
             function get_file_info(file_path){
 
-                socket.emit('get_file_info', { get_file_info:file_path });
+                socket2.emit('get_file_info', { get_file_info:file_path });
 
-                socket.once('even_file_info',function(msg){
+                socket2.once('even_file_info',function(msg){
 
                     var file_info_html='' , file_type_demo='';
 
@@ -186,7 +242,7 @@
                 if(folder_name){
 
                     if(file.indexOf('.') == -1){
-                        socket.emit('add_folder', { add_folder : (file_path+folder_name+'/') });
+                        socket2.emit('add_folder', { add_folder : (file_path+folder_name+'/') });
                         document.getElementById('folder_name').value = '';
                     }else{
                         browserMessage('新增資料夾錯誤', '路徑錯誤！！');
@@ -203,8 +259,119 @@
 
                 if (confirm("是否刪除? path=./"+file_path) == true) {
 
-                    socket.emit('del_file', { del_file:file_path });
+                    socket2.emit('del_file', { del_file:file_path });
 
+                }
+
+            }
+
+            var m_file, file_data=[], unlock=true, date;
+
+            function dragoverHandler(e){
+                e.preventDefault() ; //防止瀏覽器執行預設動作
+            }
+
+            function dropHandler(evt) {//evt 為 DragEvent 物件
+                evt.preventDefault();
+
+                if(unlock){
+
+                    unlock = false;
+
+                    date = new Date().getTime();
+
+                    m_file = evt.dataTransfer.files;
+
+                    var file_path = document.getElementById('file_path').innerHTML;
+                    var file = file_path.split('/').pop();
+
+                    if(file.indexOf('.') == -1){
+
+                        add_progress();
+
+                    }else{
+                        browserMessage('上傳錯誤', '路徑錯誤！！');
+                    }
+
+
+                }else{
+                    browserMessage('上傳', '上傳中！！');
+                }
+
+            }
+            window.onload = function (){
+                document.getElementById('file').addEventListener("change", function(){
+
+                    if(unlock){
+                        unlock = false;
+
+                        date = new Date().getTime();
+
+                        m_file = document.getElementById('file').files;
+
+                        var file_path = document.getElementById('file_path').innerHTML;
+                        var file = file_path.split('/').pop();
+
+                        if(file.indexOf('.') == -1){
+
+                            add_progress();
+
+                        }else{
+                            browserMessage('上傳錯誤', '路徑錯誤！！');
+                        }
+
+                    }else{
+                        browserMessage('上傳', '上傳中！！');
+                    }
+
+                });
+            }
+            
+            function add_progress(){
+
+                var html_pg = '';
+
+                for(var i=0; i<m_file.length; i++){
+
+
+                    html_pg += '<div class="col-12">';
+                    html_pg += '    <span>File : '+m_file[i].name+'</span>';
+                    html_pg += '    <span class="pull-right">Size : '+(m_file[i].size/1024)+'KB</span>';
+
+                    html_pg += '    <div class="progress">';
+                    html_pg += '        <div class="progress-bar progress-bar-striped color-primary active" id="'+m_file[i].name+date+'" style="width: 0%;"></div>';
+                    html_pg += '    </div>';
+                    html_pg += '</div>';
+
+                    file_data[i] = m_file[i].name;
+                }
+
+                document.getElementById("pg").innerHTML += html_pg;
+
+                var context_sh = document.getElementById('pg').scrollHeight;//取得高度
+
+                    document.getElementById('pg').scrollTop = context_sh; //至底
+
+                upload_file();
+            }
+
+            function upload_file(){
+
+                if(m_file.length){
+
+                    var file_path = document.getElementById('file_path').innerHTML;
+                    //console.log(file_path);
+
+                    var file = file_path.split('/').pop();
+
+                    socket2.emit('upload_file_data', { filedata: file_data , file_path: file_path });
+
+                    socket2.once('even_file_end',function(){
+                        document.getElementById('file').value='';
+                    });
+
+                }else{
+                    browserMessage('上傳錯誤', '選擇檔案！！');
                 }
 
             }
@@ -299,154 +466,4 @@
         <div class="modal-overlay" id="modal_bk"></div>
 
     </body>
-    <script>
-
-        var m_file, file_data=[], unlock=true, date;
-
-        function dragoverHandler(e){
-            e.preventDefault() ; //防止瀏覽器執行預設動作
-        }
-
-        function dropHandler(evt) {//evt 為 DragEvent 物件
-            evt.preventDefault();
-
-            if(unlock){
-
-                unlock = false;
-
-                date = new Date().getTime();
-
-                m_file = evt.dataTransfer.files;
-
-                var file_path = document.getElementById('file_path').innerHTML;
-                var file = file_path.split('/').pop();
-
-                if(file.indexOf('.') == -1){
-
-                    add_progress();
-
-                }else{
-                    browserMessage('上傳錯誤', '路徑錯誤！！');
-                }
-
-
-            }else{
-                browserMessage('上傳', '上傳中！！');
-            }
-
-        }
-
-        document.getElementById('file').addEventListener("change", function(){
-
-            if(unlock){
-                unlock = false;
-
-                date = new Date().getTime();
-
-                m_file = document.getElementById('file').files;
-
-                var file_path = document.getElementById('file_path').innerHTML;
-                var file = file_path.split('/').pop();
-
-                if(file.indexOf('.') == -1){
-
-                    add_progress();
-
-                }else{
-                    browserMessage('上傳錯誤', '路徑錯誤！！');
-                }
-
-            }else{
-                browserMessage('上傳', '上傳中！！');
-            }
-
-        });
-
-        function add_progress(){
-
-            var html_pg = '';
-
-            for(var i=0; i<m_file.length; i++){
-
-
-                html_pg += '<div class="col-12">';
-                html_pg += '    <span>File : '+m_file[i].name+'</span>';
-                html_pg += '    <span class="pull-right">Size : '+(m_file[i].size/1024)+'KB</span>';
-
-                html_pg += '    <div class="progress">';
-                html_pg += '        <div class="progress-bar progress-bar-striped color-primary active" id="'+m_file[i].name+date+'" style="width: 0%;"></div>';
-                html_pg += '    </div>';
-                html_pg += '</div>';
-
-                file_data[i] = m_file[i].name;
-            }
-
-            document.getElementById("pg").innerHTML += html_pg;
-
-            var context_sh = document.getElementById('pg').scrollHeight;//取得高度
-
-                document.getElementById('pg').scrollTop = context_sh; //至底
-
-            upload_file();
-        }
-
-        function upload_file(){
-
-            if(m_file.length){
-
-                var file_path = document.getElementById('file_path').innerHTML;
-                //console.log(file_path);
-
-                var file = file_path.split('/').pop();
-
-                socket.emit('upload_file_data', { filedata: file_data , file_path: file_path });
-
-                socket.once('even_file_end',function(){
-                    document.getElementById('file').value='';
-                });
-
-            }else{
-                browserMessage('上傳錯誤', '選擇檔案！！');
-            }
-
-        }
-
-        socket.on('even_file_upload',function(count){
-
-            var stream = ss.createStream();
-
-            var count = count.fileCount;
-
-            ss(socket).emit('upload_file', stream);
-
-            var blobStream = ss.createBlobReadStream(m_file[count]);
-            var size = 0;
-
-            blobStream.on('data', function(chunk) {
-
-                size += chunk.length;
-
-                var file_stream = Math.floor(size / m_file[count].size * 100);
-
-                document.getElementById(m_file[count].name+date).style.width = file_stream + '%';
-
-                if(file_stream > 15){
-                    document.getElementById(m_file[count].name+date).innerHTML = file_stream + '%';
-                }else{
-                    document.getElementById(m_file[count].name+date).innerHTML = '';
-                }
-
-                //console.log(file_stream);
-            });
-
-            blobStream.on('end', function() {
-                console.log('file upload!!');
-                unlock = true;
-            });
-
-            blobStream.pipe(stream);
-            //console.log(socket,stream,file.size);
-        });
-
-    </script>
 </html>

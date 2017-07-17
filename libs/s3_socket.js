@@ -16,7 +16,17 @@ function s3Socket(sio, local, systemOption){
     this.MaxFile = 0;
     this.file_path='';
 
-    this.server = this.io.on('connection', this.socketHandler.bind(this));
+    this.s3 = new s3_function();
+
+    this.s3.getAllBucket(function(data){
+        this.allbucket = data;
+
+        for (let i = 0; i < data.length; i++) {
+            this.initChat(data[i]);
+        }
+    }.bind(this));
+
+    this.server = this.io.of('/server').on('connection', this.socketHandler.bind(this));
 }
 
 s3Socket.prototype.socketHandler = function(socket){
@@ -24,28 +34,39 @@ s3Socket.prototype.socketHandler = function(socket){
     this.online++;
     this.server.emit('online', { online: this.online });
 
-    this.s3 = new s3_function(socket);
-
-    this.s3.getAllBucket();
+    socket.emit('get_buckets_list', { get_buckets_list:this.allbucket });
 
     socket.on('setBucketName', function(data){
-        this.bucketName = data.setBucketName;
-        this.s3.get_game_file_list(data.setBucketName);
+        this.s3.get_game_file_list(data.setBucketName, function(data){
+            socket.emit('get_list', { get_list: data });
+        });
     }.bind(this));
 
     socket.on('add_bucket', this.addBucket.bind(this, socket));
 
-    socket.on('upload_file_data', this.uploadFileData.bind(this, socket));
-
-    ss(socket).on('upload_file', this.uploadFileStream.bind(this, socket));
-
-    socket.on('get_file_info', this.getFileInfo.bind(this));
-
-    socket.on('add_folder', this.addFolder.bind(this, socket));
-
-    socket.on('del_file', this.delFile.bind(this, socket));
-
     socket.on('disconnect', this.disconnect.bind(this));
+};
+
+s3Socket.prototype.initChat = function (bucketName) {
+    let chat = this.io.of('/'+bucketName).on('connection', function(socket){
+
+        this.systemOption.logs({ status:"User", msg:"connected Bucket:"+ bucketName });
+
+        socket.on('upload_file_data', this.uploadFileData.bind(this, socket));
+
+        ss(socket).on('upload_file', this.uploadFileStream.bind(this, bucketName, chat, socket));
+
+        socket.on('get_file_info', this.getFileInfo.bind(this, bucketName, socket));
+
+        socket.on('add_folder', this.addFolder.bind(this, bucketName, chat, socket));
+
+        socket.on('del_file', this.delFile.bind(this, bucketName, chat, socket));
+
+        socket.on('disconnect', function(){
+            this.systemOption.logs({ status:"User", msg:"disconnected Bucket:"+ bucketName });
+        }.bind(this));
+
+    }.bind(this));
 };
 
 s3Socket.prototype.uploadFileData = function(socket, msg){
@@ -60,17 +81,28 @@ s3Socket.prototype.uploadFileData = function(socket, msg){
     socket.emit('even_file_upload', { fileCount });
 };
 
-s3Socket.prototype.uploadFileStream = function(socket, stream){
+s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 
-    var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+this.filedata[this.fileCount],{flags: 'a',encoding: 'utf8'}));
+    let n = Date.now();
+    let x = Math.floor((Math.random() * 10000) + 1);
+
+    let type = this.filedata[this.fileCount].split(".")[1];
+    let tmpFileName = n+x+'.'+type;
+
+    var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+tmpFileName,{flags: 'a',encoding: 'utf8'}));
+    // var file_stream =stream.pipe(fs.createWriteStream(this.local+'/tmp/'+this.filedata[this.fileCount],{flags: 'a',encoding: 'utf8'}));
 
     file_stream.on('close',function(){
 
-        var file_data_tmp_path = this.local+'/tmp/'+this.filedata[this.fileCount];
+        var file_data_tmp_path = this.local+'/tmp/'+tmpFileName;
+
+        // var file_data_tmp_path = this.local+'/tmp/'+this.filedata[this.fileCount];
 
         var body = fs.createReadStream(file_data_tmp_path);
 
-        this.s3.upload_gmae_file(this.bucketName,(this.file_path + this.filedata[this.fileCount]),body,function(even, err){
+        console.log(this.file_path, this.filedata[this.fileCount]);
+
+        this.s3.upload_gmae_file(bucket,(this.file_path + this.filedata[this.fileCount]),body,function(even, err){
             if(err){
                 socket.emit('err', { errCode: err });
             }
@@ -78,8 +110,10 @@ s3Socket.prototype.uploadFileStream = function(socket, stream){
                 fs.unlink(file_data_tmp_path);
                 console.log('del tmp file : ' + file_data_tmp_path);
             }
-            
-            this.s3.get_game_file_list(this.bucketName);
+
+            this.s3.get_game_file_list(bucket, function(data){
+                chat.emit('get_list', { get_list: data });
+            });
 
         }.bind(this));
 
@@ -105,31 +139,41 @@ s3Socket.prototype.uploadFileStream = function(socket, stream){
 s3Socket.prototype.addBucket = function (socket, msg) {
     this.s3.createBucket(msg.add_bucket, function(data, err){
         if(data){
-            this.s3.getAllBucket();
+            this.initChat(msg.add_bucket);
+
+            this.s3.getAllBucket(function(data){
+                this.allbucket = data;
+            }.bind(this));
         }else{
             socket.emit('err', { errCode: err });
         }
     }.bind(this));
 };
 
-s3Socket.prototype.getFileInfo = function(msg){
-    this.s3.get_file_info(this.bucketName, msg.get_file_info);
+s3Socket.prototype.getFileInfo = function(bucket, socket, msg){
+    this.s3.get_file_info(bucket, msg.get_file_info, function(data){
+        socket.emit('even_file_info', data);
+    }.bind(this));
 };
 
-s3Socket.prototype.addFolder = function(socket, msg){
-    this.s3.add_folder(this.bucketName, msg.add_folder, function(data, err){
+s3Socket.prototype.addFolder = function(bucket, chat, socket, msg){
+    this.s3.add_folder(bucket, msg.add_folder, function(data, err){
         if(data){
-            this.s3.get_game_file_list(this.bucketName);
+            this.s3.get_game_file_list(bucket, function(data){
+                chat.emit('get_list', { get_list: data });
+            });
         }else{
             socket.emit('err', { errCode: err });
         }
     }.bind(this));
 };
 
-s3Socket.prototype.delFile = function(socket, msg){
-    this.s3.del_file(this.bucketName, msg.del_file,function(data, err){
+s3Socket.prototype.delFile = function(bucket, chat, socket, msg){
+    this.s3.del_file(bucket, msg.del_file,function(data, err){
         if(data){
-            this.s3.get_game_file_list(this.bucketName);
+            this.s3.get_game_file_list(bucket, function(data){
+                chat.emit('get_list', { get_list: data });
+            });
         }else{
             socket.emit('err', { errCode: err });
         }

@@ -2,6 +2,8 @@
 var ss = require('socket.io-stream');
 var fs = require("fs");
 var s3_function = require('./s3_function.js');
+var CFlib = require('./cf-lib.js');
+var ACMlib = require('./acm-lib.js');
 
 function s3Socket(sio, local, systemOption){
 
@@ -17,6 +19,26 @@ function s3Socket(sio, local, systemOption){
     this.file_path='';
 
     this.s3 = new s3_function();
+    this.cf = new CFlib();
+    this.acm = new ACMlib();
+
+    this.acm.listCertificates(function(data, err){
+        if(err){
+            console.log(err);
+        }else{
+            this.acmARN = data;
+            // console.log(this.acmARN);
+        }
+    }.bind(this));
+
+    this.cf.getOAI(function(data, err){
+        if(err){
+            console.log(err);
+        }else{
+            this.cfOAI = data;
+            // console.log(this.cfOAI);
+        }
+    }.bind(this));
 
     this.s3.getAllBucket(function(data){
         this.allbucket = data;
@@ -84,7 +106,7 @@ s3Socket.prototype.uploadFileData = function(socket, msg){
 s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 
     let n = Date.now();
-    let x = Math.floor((Math.random() * 10000) + 1);
+    let x = Math.floor((Math.random() * 1000000) + 1);
 
     let type = this.filedata[this.fileCount].split(".")[1];
     let tmpFileName = n+x+'.'+type;
@@ -137,17 +159,40 @@ s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 };
 
 s3Socket.prototype.addBucket = function (socket, msg) {
-    this.s3.createBucket(msg.add_bucket, function(data, err){
-        if(data){
-            this.initChat(msg.add_bucket);
 
-            this.s3.getAllBucket(function(data){
-                this.allbucket = data;
-            }.bind(this));
+    this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
+        if(data){
+            console.log(data);
+            //console.log(data.Distribution.Status);
         }else{
-            socket.emit('err', { errCode: err });
+            console.log(err);
+            //socket.emit('err', { errCode: err });
         }
-    }.bind(this));
+    });
+
+    // this.s3.createBucket(msg.add_bucket, (data, err) => {
+    //     if(data){
+    //
+    //         this.systemOption.logs({ status:"Add Bucket", msg:"Add " + msg.add_bucket + '!' });
+    //
+    //         this.initChat(msg.add_bucket);
+    //
+    //         this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
+    //             if(data){
+    //                 console.log(data);
+    //                 console.log(data.Distribution.Status);
+    //             }else{
+    //                 socket.emit('err', { errCode: err });
+    //             }
+    //         });
+    //
+    //         this.s3.getAllBucket((data)=>{
+    //             this.allbucket = data;
+    //         });
+    //     }else{
+    //         socket.emit('err', { errCode: err });
+    //     }
+    // });
 };
 
 s3Socket.prototype.getFileInfo = function(bucket, socket, msg){

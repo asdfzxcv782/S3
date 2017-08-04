@@ -3,8 +3,7 @@
 var AWS = require('aws-sdk');
 var aws_key = require('../config/aws_key.js');
 
-function s3_function(socket){
-    // this.sio = socket;
+function s3_function(){
 
     this.s3client = new AWS.S3({
         accessKeyId: aws_key.aws_ec2_s3_access,
@@ -12,6 +11,7 @@ function s3_function(socket){
     });
 
 }
+
 /**
  * getAllBuckets Name
  */

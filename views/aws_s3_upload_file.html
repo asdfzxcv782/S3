@@ -204,27 +204,28 @@
                     file_info_html +='<li>LastModified : '+msg.file_LastModified+'</li>';
 
                     if(file_name){
-                        file_info_html +='<li>public_url : <span id="motivatebox">'+msg.file_public_url+'</span></li>';
+                        file_info_html +='<li>public_s3 : <span>'+msg.file_public_s3+'</span></li>';
+                        file_info_html +='<li>public_cdn : <span>'+msg.file_public_cdn+'</span></li>';
                     }
 
                     if(file_type ==='mp3'){
                         file_type_demo += '<audio controls>';
-                        file_type_demo += '    <source src="'+msg.file_public_url+'" type="audio/mpeg">';
+                        file_type_demo += '    <source src="'+msg.file_public_cdn+'" type="audio/mpeg">';
                         file_type_demo += '</audio>';
 
                     }else if(file_type ==='png'){
 
-                        file_type_demo = '<img src="'+msg.file_public_url+'">';
+                        file_type_demo = '<img src="'+msg.file_public_cdn+'">';
 
                     }
 
                     document.getElementById('file_info').innerHTML = file_info_html;
                     document.getElementById('file_demo').innerHTML = file_type_demo;
 
-                    if(file_name){
-                        var copy_tooltip = new copy_clipboard(document.getElementById('motivatebox'));
-                        copy_tooltip.addEL();
-                    }
+                    // if(file_name){
+                    //     var copy_tooltip = new copy_clipboard(document.getElementById('motivatebox'));
+                    //     copy_tooltip.addEL();
+                    // }
 
                 });
             }
@@ -416,6 +417,7 @@
 
                     <div class="col-6">
                         <a class="btn" onclick="del_file();">刪除檔案</a>
+                        <a class="btn" onclick="del_cdn_cache();">清除CDN快取</a>
                     </div>
 
                     <div class="col-6">

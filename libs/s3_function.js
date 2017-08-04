@@ -238,12 +238,15 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
 
     let file_type = file_name.split('.')[1];
 
-    switch (file_type) {
+    switch (file_type.toLowerCase()) {
       case 'png':
           params.ContentType = 'image/png';
       break;
       case 'css':
           params.ContentType = 'text/css';
+      break;
+      case 'html':
+          params.ContentType = 'text/html';
       break;
       case 'js':
           //params.ContentType = 'text/css';

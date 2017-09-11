@@ -260,6 +260,12 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
       case 'woff2':
           params.ContentType = 'application/font-woff2';
       break;
+      case 'otf':
+          params.ContentType = 'application/x-font-opentype';
+      break;
+      case 'eot':
+          params.ContentType = 'application/vnd.ms-fontobject';
+      break;
     }
 
     this.s3client.putObject(params, function(err, data) {

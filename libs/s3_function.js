@@ -248,6 +248,9 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
       case 'html':
           params.ContentType = 'text/html';
       break;
+      case 'gif':
+          params.ContentType = 'image/gif';
+      break;
       case 'js':
           //params.ContentType = 'text/css';
       break;

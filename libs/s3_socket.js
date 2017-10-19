@@ -177,14 +177,14 @@ s3Socket.prototype.addBucket = function (socket, msg) {
 
             this.initChat(msg.add_bucket);
 
-            this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
-                if(data){
-                    console.log(data);
-                    console.log(data.Distribution.Status);
-                }else{
-                    socket.emit('err', { errCode: err });
-                }
-            });
+            // this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
+            //     if(data){
+            //         console.log(data);
+            //         console.log(data.Distribution.Status);
+            //     }else{
+            //         socket.emit('err', { errCode: err });
+            //     }
+            // });
 
             this.s3.getAllBucket((data)=>{
                 this.allbucket = data;

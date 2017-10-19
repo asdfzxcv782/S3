@@ -160,39 +160,39 @@ s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 
 s3Socket.prototype.addBucket = function (socket, msg) {
 
-    this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
-        if(data){
-            console.log(data);
-            //console.log(data.Distribution.Status);
-        }else{
-            console.log(err);
-            //socket.emit('err', { errCode: err });
-        }
-    });
-
-    // this.s3.createBucket(msg.add_bucket, (data, err) => {
+    // this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
     //     if(data){
-    //
-    //         this.systemOption.logs({ status:"Add Bucket", msg:"Add " + msg.add_bucket + '!' });
-    //
-    //         this.initChat(msg.add_bucket);
-    //
-    //         this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
-    //             if(data){
-    //                 console.log(data);
-    //                 console.log(data.Distribution.Status);
-    //             }else{
-    //                 socket.emit('err', { errCode: err });
-    //             }
-    //         });
-    //
-    //         this.s3.getAllBucket((data)=>{
-    //             this.allbucket = data;
-    //         });
+    //         console.log(data);
+    //         //console.log(data.Distribution.Status);
     //     }else{
-    //         socket.emit('err', { errCode: err });
+    //         console.log(err);
+    //         //socket.emit('err', { errCode: err });
     //     }
     // });
+
+    this.s3.createBucket(msg.add_bucket, (data, err) => {
+        if(data){
+
+            this.systemOption.logs({ status:"Add Bucket", msg:"Add " + msg.add_bucket + '!' });
+
+            this.initChat(msg.add_bucket);
+
+            this.cf.creatCF(msg.add_bucket, this.cfOAI, this.acmARN, (err, data) => {
+                if(data){
+                    console.log(data);
+                    console.log(data.Distribution.Status);
+                }else{
+                    socket.emit('err', { errCode: err });
+                }
+            });
+
+            this.s3.getAllBucket((data)=>{
+                this.allbucket = data;
+            });
+        }else{
+            socket.emit('err', { errCode: err });
+        }
+    });
 };
 
 s3Socket.prototype.getFileInfo = function(bucket, socket, msg){

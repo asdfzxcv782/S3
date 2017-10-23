@@ -254,6 +254,9 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
       case 'js':
           //params.ContentType = 'text/css';
       break;
+      case 'json':
+          params.ContentType = 'application/json';
+      break;
       case 'ttf':
           params.ContentType = 'application/x-font-ttf';
       break;

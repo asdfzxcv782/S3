@@ -122,9 +122,9 @@ s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
 
         var body = fs.createReadStream(file_data_tmp_path);
 
-        console.log(this.file_path, this.filedata[this.fileCount]);
+        console.log(this.file_path[this.fileCount], this.filedata[this.fileCount]);
 
-        this.s3.upload_gmae_file(bucket,(this.file_path + this.filedata[this.fileCount]),body,function(even, err){
+        this.s3.upload_gmae_file(bucket,(this.file_path[this.fileCount] + this.filedata[this.fileCount]),body,function(even, err){
             if(err){
                 socket.emit('err', { errCode: err });
             }

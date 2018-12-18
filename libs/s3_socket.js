@@ -129,8 +129,10 @@ s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
                 socket.emit('err', { errCode: err });
             }
             if(even){
-                fs.unlink(file_data_tmp_path);
-                console.log('del tmp file : ' + file_data_tmp_path);
+                fs.unlink(file_data_tmp_path, (err)=>{
+                    if (err) throw err;
+                    console.log('del tmp file : ' + file_data_tmp_path);
+                });
             }
 
             this.s3.get_game_file_list(bucket, function(data){

@@ -302,6 +302,10 @@
 
                     unlock = false;
 
+                    if(m_file){
+                        m_file = [];
+                    }
+
                     date = new Date().getTime();
                     var items = evt.dataTransfer.items;
                     
@@ -318,36 +322,43 @@
                 }
 
             }
-            // window.onload = function (){
-            //     document.getElementById('file').addEventListener("change", function(){
+            window.onload = function (){
+                document.getElementById('file').addEventListener("change", function(){
 
-            //         if(unlock){
-            //             unlock = false;
+                    if(unlock){
+                        unlock = false;
+                        
+                        if(m_file){
+                            m_file = [];
+                        }
 
-            //             date = new Date().getTime();
+                        date = new Date().getTime();
 
-            //             m_file = document.getElementById('file').files;
+                        m_file = document.getElementById('file').files;
+                        
+                        for(var i=0; i<m_file.length; i++){
+                            m_path.push(document.getElementById('file_path').innerHTML);                        
+                        }
+                        
+                        var file = document.getElementById('file_path').innerHTML.split('/').pop();
 
-            //             var file_path = document.getElementById('file_path').innerHTML;
-            //             var file = file_path.split('/').pop();
+                        if(file.indexOf('.') == -1){
 
-            //             if(file.indexOf('.') == -1){
+                            add_progress(m_file, m_path);
 
-            //                 add_progress();
+                        }else{
+                            browserMessage('上傳錯誤', '路徑錯誤！！');
+                        }
 
-            //             }else{
-            //                 browserMessage('上傳錯誤', '路徑錯誤！！');
-            //             }
+                    }else{
+                        browserMessage('上傳', '上傳中！！');
+                    }
 
-            //         }else{
-            //             browserMessage('上傳', '上傳中！！');
-            //         }
-
-            //     });
-            // }
+                });
+            }
 
             function uploadtest(){
-                // console.log(m_file, m_folder);
+                console.log(m_file, m_folder);
                 
                 for (let index = 0; index < m_folder.length; index++) {
                     socket2.emit('add_folder', { add_folder : (m_folder[index]) });

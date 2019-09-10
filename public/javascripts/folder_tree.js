@@ -12,7 +12,6 @@ function main_GT(pele,index_name,div)
 //            document.getElementById('file_tree').appendChild(this.control);
     document.getElementById(div).appendChild(this.folderPath);
     //pele.appendChild(this.element);
-
     //this.folder = new folder_GT(this.folderPath, 'ushowgamefile', '/', this);
     this.folder = new folder_GT(this.folderPath, index_name, [index_name], this);
 }
@@ -77,8 +76,19 @@ function folder_GT(pele, name, path, main,  file)
     this.element.appendChild(this.subElement);
     if(!file)
     {
+        this.lastPath = document.getElementById('file_path').innerHTML.split('/');//處理目前路徑
+        var test = this.lastPath.filter(word => word == name)
         this.subElement.appendChild(this.folderArea);
         this.mainElement.onclick = this.open.bind(this);
+        //this.mainElement.click();
+        this.mainElement.className = `folder_${name}`;
+        if(name === path[0]){
+            console.log('click')
+            this.subElement.style.display = 'block';
+        }else if(test.length !==0){
+            console.log('click')
+            this.subElement.style.display = 'block';
+        }
         this.subFolder = {};
         this.subFile = {};
     }
@@ -88,7 +98,7 @@ function folder_GT(pele, name, path, main,  file)
         {
             this.main.updateControlPath(this.path);
         }.bind(this);
-        this.mainElement.className = 'file';
+        this.mainElement.className = `file`;
     }
     this.subElement.appendChild(this.fileArea);
 
@@ -110,7 +120,6 @@ folder_GT.prototype =
     add: function(array)
     {
         var x = array.shift();
-
         if(x !== undefined)
         {
             var xxx = this.path.slice(0);
@@ -127,6 +136,7 @@ folder_GT.prototype =
             }
             else if(x !== '')
             {
+                
                 if(this.subFile[x] === undefined )
                 {
                     this.fileArea.style.display = 'block';

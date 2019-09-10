@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function browserMessage(theTitle, theBody, theIcon='http://via.vovo2000.com/vimg/phpbb2/files/201005/v2k-316-1273487172805-mid.jpg') {
+function browserMessage(theTitle, theBody, theIcon='https://s3-ap-southeast-1.amazonaws.com/gamefilelib/cashNet/mobile/icon/UNDERCONSTRUCTION.png') {
     // If the user agreed to get notified
     // Let's try to send ten notifications
     let n;
@@ -21,8 +21,8 @@ function browserMessage(theTitle, theBody, theIcon='http://via.vovo2000.com/vimg
             icon:theIcon,
             tag: 'soManyNotification'
         };
-
-        n = new Notification(theTitle, option);
+        alert(theTitle+',' +theBody);
+        //n = new Notification(theTitle, option);
         // setTimeout(n.close.bind(n), 4000);
     }
 
@@ -41,9 +41,10 @@ function browserMessage(theTitle, theBody, theIcon='http://via.vovo2000.com/vimg
             if (status === "granted") {
                 var option = {
                     body: theBody,
-                    icon:theIcon,
+                    //icon:theIcon,
                     tag: 'soManyNotification'
                 };
+                alert(theTitle+',' +theBody + '2');
                 var n = new Notification(theTitle, option);
             }
 
@@ -57,6 +58,13 @@ function browserMessage(theTitle, theBody, theIcon='http://via.vovo2000.com/vimg
     // If the user refuses to get notified
     else {
         // We can fallback to a regular modal alert
-        alert("Have some message, but you not enable it!!");
+        //alert("Have some message, but you not enable it!!");
+        var option = {
+            body: theBody,
+            //icon:theIcon,
+            tag: 'soManyNotification'
+        };
+        alert(theTitle+',' +theBody);
+        /*n = new Notification(theTitle, option);*/
     }
 }

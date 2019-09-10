@@ -12,6 +12,7 @@ var SystemOption = require("./libs/system.js");
 var s3Socket = require('./libs/s3_socket.js');
 //var s3_function = require('./libs/s3_function.js');
 
+
 var fs = require("fs");
 
 var option = {
@@ -26,6 +27,8 @@ nunjucks.configure(__dirname + '/views', { //模板引擎設定
     express: app
 });
 
+
+
 app.use(express.static(__dirname + '/public')); //靜態檔案處理
 
 // configure app to use bodyParser()
@@ -34,9 +37,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // BasicAuth login
-app.use(function(req, res, next) {
-    var user = auth(req);
-    if (user === undefined || user['name'] !== 'ushow' || user['pass'] !== 'vshow2351700') {
+/*app.use( function(req, res, next) {
+     req.user = auth(req);
+    if (req.user === undefined || req.user['name'] !== 'cq9mobi'  || req.user['pass'] !== 'cq9mobi' ) {
         res.statusCode = 401;
         res.setHeader('WWW-Authenticate', 'Basic realm=Authorization Required');
         res.json({
@@ -44,18 +47,43 @@ app.use(function(req, res, next) {
         });
         res.end();
     } else {
-        next();
+      next();
     }
+});*/
+
+app.use( function(req, res, next) {
+  req.user = auth(req);
+  console.log(req);
+ if ((req.user !== undefined && req.user['name'] == 'ushow'  && req.user['pass'] == 'vshow2351700' )) {
+    next();
+ } else {
+  res.statusCode = 401;
+  res.setHeader('WWW-Authenticate', 'Basic realm=Authorization Required');
+  /*res.json({
+    login:false
+  });*/
+  res.end('Access denied');
+ }
 });
 
-app.get('/', function (req, res){
+
+
+
+app.get('/',   (req, res) => {
+  //await new s3Socket(io, __dirname, systemOption)
+  
   res.render('aws_s3_upload_file.html', {
-    title : 'Aws-S3-Upload-File',
-    head : 'Aws-S3 Upload File',
+    title : req.user.name,
+    head : 'Hello:  '+req.user.name,
     socketPort : option.webPort
   });
+  
 });
 
+app.get('/logout', function (req, res) {
+  res.status(401).render('logOut.html');
+  //res.set('WWW-Authenticate', 'Basic realm=Authorization Required');
+});
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   var err = new Error('Not Found');

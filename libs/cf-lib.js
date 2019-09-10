@@ -2,6 +2,7 @@
 
 var AWS = require('aws-sdk');
 var aws_key = require('../config/aws_key.js');
+var cf_bucket = require('../config/cf_bucket.js');
 
 function CFlib(){
 
@@ -11,8 +12,102 @@ function CFlib(){
         secretAccessKey: aws_key.aws_ec2_s3_passwd
     });
 
+    
+    
 }
+/**
+ * listInvalidation列出失效 - cloudfront
+ * @param  {Function} callback callback
+ */
+CFlib.prototype.listInvalidations = function (bucket,callback) {
+  let bucket_Id = cf_bucket[`${bucket}`]
+  let params = {
+    DistributionId: `${bucket_Id}`, 
+    Marker: '',
+    MaxItems: '10',
+  };
+  this.cloudfront.listInvalidations(params, function(err, data) {
+      if (err) {
+        callback(false,'',err.code);
+      }
+      else if(data.InvalidationList.IsTruncated === false){
 
+        callback(false,'','沒有失效可查詢')
+      }else{
+        for(let i=0;i<5;i++){
+          this.getInvalidation(data.Items[i].Id, bucket_Id,callback,bucket); 
+        };   
+      };
+        //this.getInvalidation(data.Items[0].Id, bucket_Id,callback,bucket); 
+      
+  }.bind(this));
+};
+
+CFlib.prototype.getInvalidation =function (data,bucket_Id,callback,bucket) {
+  console.log(data)
+  let params = {
+    DistributionId: `${bucket_Id}`, 
+    Id:data
+  };
+  this.cloudfront.getInvalidation(params, function(err, data) {
+      if (err) {
+          callback(false, err.code);
+      }else{
+          callback(true,data,'',bucket);//callback給listInvalidations指定的callback
+          console.log(data);
+      }
+  }.bind(this));
+}; 
+/**
+ * createInvalidation新增失效 - cloudfront
+ * @param  {Function} callback callback
+ */
+CFlib.prototype.createInvalidation =  function(bucket,file_name,callback) {
+  console.log(file_name.indexOf('.'))
+  let bucket_Id = cf_bucket[`${bucket}`]
+  let dateTime = Date.now();
+  let timestamp = Math.floor(dateTime / 1000);
+  if(file_name.indexOf('.') === -1){
+    var params = {
+      DistributionId: bucket_Id, 
+      InvalidationBatch: { 
+        CallerReference: `${timestamp}`, 
+        Paths: { 
+          Quantity: 1, 
+          Items: [
+            '/'+`${file_name}`+'*',
+            
+          ]
+        }
+      }
+    };
+  }else{
+  var params = {
+    DistributionId: bucket_Id, 
+    InvalidationBatch: { 
+      CallerReference: `${timestamp}`, 
+      Paths: { 
+        Quantity: 1, 
+        Items: [
+          '/'+`${file_name}`,
+          
+        ]
+      }
+    }
+  };}
+  this.cloudfront.createInvalidation(params, function(err, data) {
+    if (err) {
+      console.log(err.code)
+      callback(false,'', err.code);
+    }
+     // an error occurred
+    else{ 
+      callback(true,data);    
+      console.log(data); 
+    }
+
+  }.bind(this))  
+};
 /**
  * GetOAI - cloudfront
  * @param  {Function} callback callback

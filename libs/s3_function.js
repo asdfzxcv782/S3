@@ -1,3 +1,4 @@
+// @ts-check
 'use strict'; //use es6
 
 var AWS = require('aws-sdk');
@@ -9,8 +10,10 @@ function s3_function(){
         accessKeyId: aws_key.aws_ec2_s3_access,
         secretAccessKey: aws_key.aws_ec2_s3_passwd
     });
+    
 
 }
+
 
 /**
  * getAllBuckets Name
@@ -109,30 +112,50 @@ s3_function.prototype.addBucketCros = function (bucketName) {
  * game_list css & pic file
  * @param {string} bucket aws_s3
  */
-s3_function.prototype.get_game_file_list = function(bucket, callback){
-
+s3_function.prototype.get_game_file_list = function(bucket,callback){
+    //params.Marker = marker
     var params = {
         Bucket:bucket,        //required
+        Marker: ''
     };
-
+    var folder_list = [];
     //this.s3client.listObjectsV2(params, function(err,data){
-    this.s3client.listObjects(params, function(err,data){
-        if (err) {
-            console.log("Error:", err);
-        }else {
-            var folder_list = [];
-
-            for (var index=0; index<data.Contents.length; index++) {
-
-                var s3 = data.Contents[index];
-
-                folder_list.push(s3.Key);
+        this.s3 = () => {
+        this.s3client.listObjects(params, function (err,data){
+            if (err) {
+                console.log("Error:", err);
+                callback(err);
+            }else {
+                console.log(data);
+                //var folder_list = [];
+                if(data.IsTruncated){
+                    for (var index=0; index<data.Contents.length; index++) {
+                        var s3 = data.Contents[index];
+                        folder_list.push(s3.Key);
+                    }
+                    params.Marker = data.Contents[data.Contents.length-1].Key
+                    this.s3();
+                    /*this.s3client.listObjects(params, function (err,data){
+                        for (var index=0; index<data.Contents.length; index++) {
+                            var s3 = data.Contents[index];
+                            folder_list.push(s3.Key);
+                        }
+                        console.log(folder_list)
+                        this.s3();
+                    })*/
+                }else{
+                    for (var index=0; index<data.Contents.length; index++) {
+                        var s3 = data.Contents[index];
+                        folder_list.push(s3.Key);
+                    }
+                    callback(folder_list);
+                }
+                // this.sio.emit('get_list', { get_list: folder_list });
             }
-            callback(folder_list);
-            // this.sio.emit('get_list', { get_list: folder_list });
-        }
-    }.bind(this));
-
+            
+        }.bind(this));
+    }
+    this.s3();
 };
 
 s3_function.prototype.get_file_info = function(bucket,file_path, callback){
@@ -141,6 +164,7 @@ s3_function.prototype.get_file_info = function(bucket,file_path, callback){
         Prefix:file_path
     };
     this.s3client.listObjects(params, function(err,data){
+        
         if (err) {
             console.log("Error:", err);
         }else {
@@ -235,8 +259,10 @@ s3_function.prototype.upload_gmae_file = function(bucket,file_name,streamObject,
       ACL: 'public-read',
       Body: streamObject
     };
+    const last = arr => arr[arr.length - 1];
 
-    let file_type = file_name.split('.')[1];
+    let file_type = last(file_name.split('.'));
+    console.log(last(file_name.split('.')));
 
     switch (file_type.toLowerCase()) {
       case 'png':
@@ -302,7 +328,7 @@ s3_function.prototype.get_file_list = function(bucket,prefix, callback){
         }else {
             var folder_list = {};
             var tmp_array =[];
-
+            
             for (var index in data.Contents) {
 
                 var s3 = data.Contents[index];

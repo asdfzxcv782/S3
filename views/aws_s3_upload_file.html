@@ -28,17 +28,25 @@
 
         <script src="javascripts/copy_tooltip.js"></script>
 
+        
+
         <link rel="stylesheet" href="stylesheets/s3_uploadfile.css" type="text/css" />
+
+        <link rel="stylesheet" href="stylesheets/style.css" type="text/css" />
+
 
         <script>
 
-            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/server');
+            //POPUP.install(10000);
+            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+ {{socketPort}}+'/server'); //本機測試用
+            //var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':443'+'/server');  //測試機https用
             var socket2= null;
-
+            socket.emit('getBucketList',{userInfo:'{{ title }}'})
             var bucketName='';
-
+            var result = [];
             socket.on('online', function(data){
-                document.getElementById('online').innerHTML = data.online;
+                document.getElementById('online').innerHTML = data.online; //線上人數事件
+                //socket.emit('getBucketList',{userInfo:'{{ title }}'})
             });
 
             socket.on('disconnect', function(){
@@ -49,6 +57,7 @@
             });
 
             socket.on('connect_error', function(){
+                console.log(err);
                 document.getElementById('status').innerHTML = '';
                 document.getElementById('status').innerHTML = 'Reconnect Server ...';
                 document.getElementById('modal').style.display = 'block';
@@ -62,10 +71,59 @@
             });
 
             socket.on('err', function(err){
-                browserMessage('錯誤', err.errCode);
+                console.log(err);
+                error(err.errCode);
             });
 
-            socket.on('get_buckets_list', function(data){
+            socket.on('succes', function(data){
+                console.log(data);
+                browserMessage('失效已提交', '\n'+'Date: '+ data.sucCode.Invalidation.CreateTime+'\n'+'Paths: '+data.sucCode.Invalidation.InvalidationBatch.Paths.Items[0]);
+            });
+
+            socket.on('findcf', function(data){
+                
+                result.push(data);
+                result.sort(function(a,b){
+                    return b.data.Invalidation.InvalidationBatch.CallerReference - a.data.Invalidation.InvalidationBatch.CallerReference
+                })
+                
+                document.getElementById("pop").innerHTML = '';
+                var pop_html='';
+                pop_html +='<div class="popup popup-arrow popup-bottom-left"">'
+                pop_html +=       '<div class="popup-box">'
+                pop_html +=            '<h6 class="popup-title"> ψ(｀∇´)ψ</h6>'
+                pop_html +=             '<p class="popup-content">失效Bucket: '+data.bucket+'</p>'
+                for(var i=0; i<result.length; i++){
+                    pop_html +=              '<p class="popup-content">失效狀態: '+result[i].data.Invalidation.Status+'</p>'
+                    pop_html +=              '<p class="popup-content">失效ID: '+result[i].data.Invalidation.Id+'</p>'
+                    pop_html +=              '<p class="popup-content">失效路徑: '+result[i].data.Invalidation.InvalidationBatch.Paths.Items+'</p>'
+                    pop_html +=              '<hr />'
+                }    
+
+                pop_html +=              '<li class="btn-outline color-common popup-content"  onclick="remove();">好</li>'
+                pop_html +=      '</div>'
+                pop_html += '</div>'
+                /*pop_html +=       '<div class="modal">'
+                pop_html +=       '<div class="modal-box">'
+                pop_html +=            '<h3 class="modal-title lead">ψ(｀∇´)ψ</h3>'
+                pop_html +=            '<h3 class="modal-title lead">失效Bucket: '+data.bucket+'</h3>'
+                    for(var i=0; i<result.length; i++){
+                    pop_html +=              '<p >失效狀態: '+result[i].data.Invalidation.Status+'</p>'
+                    pop_html +=              '<p >失效ID: '+result[i].data.Invalidation.Id+'</p>'
+                    pop_html +=              '<p >失效路徑: '+result[i].data.Invalidation.InvalidationBatch.Paths.Items+'</p>'
+                    pop_html +=              '<hr />'
+                }
+                pop_html +=              '<li class="btn-outline color-common"  onclick="remove();">好</li>'
+                pop_html +=       '</div>'
+                pop_html += '</div>'
+                pop_html += '<div class="modal-overlay"></div>'*/
+                document.getElementById("pop").innerHTML += pop_html;
+            })
+
+            
+
+            socket.on('get_buckets_list', function(data){ //s3socket.js emit
+                console.log(data);
 
                 let dom = document.getElementById('bucketName');
 
@@ -93,57 +151,68 @@
                             if(socket2){
                                 socket2.disconnect();
                             }
-                            socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/'+bucketName);
-
+                            socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/'+bucketName);//每個bucketname增加一個socket
+                            //socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':443'+'/'+bucketName);
                             socket2.on('get_list', function(data){
+                                console.log(data);
 
                                 var file_tree = new main_GT(document.getElementById('file_tree'), bucketName, 'file_tree');
 
                                 for(var key in data.get_list){
-
                                     var tmp = data.get_list[key].split('/');
-
                                     file_tree.addFolder(tmp);
-
                                 }
+                                document.getElementById('file_info').innerHTML = '';
+                                document.getElementById('file_demo').innerHTML = '';
 
                             });
 
                             socket2.on('even_file_upload',function(count){
 
-                                var stream = ss.createStream();
-
+                                var stream = ss.createStream({
+                                    objectMode: true,
+                                    allowHalfOpen: true
+                                });
+                                
                                 var count = count.fileCount;
+                                console.log(count);
+                                console.log(m_file[count]);
+                                if(m_file[count]){
+                                    ss(socket2).emit('upload_file', stream);
 
-                                ss(socket2).emit('upload_file', stream);
+                                    var blobStream = ss.createBlobReadStream(m_file[count]);
+                                    var size = 0;
 
-                                var blobStream = ss.createBlobReadStream(m_file[count]);
-                                var size = 0;
+                                    blobStream.on('data', function(chunk) {
 
-                                blobStream.on('data', function(chunk) {
+                                        size += chunk.length;
 
-                                    size += chunk.length;
+                                        var file_stream = Math.floor(size / m_file[count].size * 100);
 
-                                    var file_stream = Math.floor(size / m_file[count].size * 100);
+                                        document.getElementById(m_file[count].name+date+count).style.width = file_stream + '%';
 
-                                    document.getElementById(m_file[count].name+date+count).style.width = file_stream + '%';
-
-                                    if(file_stream > 15){
-                                        document.getElementById(m_file[count].name+date+count).innerHTML = file_stream + '%';
-                                    }else{
-                                        document.getElementById(m_file[count].name+date+count).innerHTML = '';
-                                    }
+                                        if(file_stream > 15){
+                                            document.getElementById(m_file[count].name+date+count).innerHTML = file_stream + '%';
+                                        }else{
+                                            document.getElementById(m_file[count].name+date+count).innerHTML = '';
+                                        }
 
                                     //console.log(file_stream);
-                                });
+                                    });
 
-                                blobStream.on('end', function() {
-                                    console.log('file upload!!');
-                                    unlock = true;
-                                });
-
-                                blobStream.pipe(stream);
+                                    blobStream.on('end', function() {
+                                        document.getElementById(m_file[count].name+date+count).style.width = '100' + '%';
+                                        document.getElementById(m_file[count].name+date+count).innerHTML = '100' + '%';
+                                        console.log('file upload!!');
+                                        unlock = true;
+                                    });
+                                    blobStream.pipe(stream);
                                 //console.log(socket,stream,file.size);
+                                }
+                                else{
+                                    console.log('uploaderror');
+                                    unlock = true
+                                }   
                             });
                         };
 
@@ -156,7 +225,10 @@
             });
 
             socket.on('get_list', function(data){
-
+                if(data.get_list.code ){
+                    browserMessage('警告',data.get_list.code);
+                }else{
+                console.log(data);    
                 var file_tree = new main_GT(document.getElementById('file_tree'), bucketName, 'file_tree');
 
                 for(var key in data.get_list){
@@ -164,6 +236,12 @@
                     var tmp = data.get_list[key].split('/');
 
                     file_tree.addFolder(tmp);
+
+                }
+                document.getElementById('file_info').innerHTML = '';
+                document.getElementById('path').innerHTML = '';
+                document.getElementById('file_path').innerHTML = '';
+                document.getElementById('file_demo').innerHTML = '';
 
                 }
 
@@ -181,18 +259,21 @@
                     browserMessage('新增桶錯誤', '空！！');
                 }
             }
-
+            function get_buckets_list(){
+                socket.emit('getBucketList',{userInfo:'{{ title }}'})
+            }
             function get_file_info(file_path){
 
                 socket2.emit('get_file_info', { get_file_info:file_path });
 
                 socket2.once('even_file_info',function(msg){
+                    
 
                     var file_info_html='' , file_type_demo='';
 
-                    var file_name = msg.file_name.split('/').pop();
-                    var file_type = file_name.split('.').pop();
-
+                    var file_name = msg.file_name.split('/').pop(); //抓檔名
+                    var file_type = file_name.split('.').pop();//抓file type
+                    
                     if(!file_name){
                         file_info_html +='<li>Type : Folder</li>';
                     }else{
@@ -201,13 +282,19 @@
                     }
 
                     file_info_html +='<li>Size : '+msg.file_size/1024+'KB</li>';
-                    file_info_html +='<li>LastModified : '+msg.file_LastModified+'</li>';
+                    file_info_html +='<li>LastModified : '+new Date(`${msg.file_LastModified}`).toLocaleString()+'</li>';
+                    
+                    
 
                     if(file_name){
                         file_info_html +='<li>public_s3 : <span>'+msg.file_public_s3+'</span></li>';
                         file_info_html +='<li>public_cdn : <span>'+msg.file_public_cdn+'</span></li>';
                     }
-
+                    file_info_html +='<a class="btn-outline color-common" onclick="create_cfIn();">檔案失效</a>'
+                    file_info_html+='<span>                     </span>'
+                    file_info_html +='<a id="find" class="btn-outline color-common" onclick="find_cfIn();">失效查詢</a>'
+                    file_info_html+='<div id="pop"></div>'
+                    
                     if(file_type ==='mp3'){
                         file_type_demo += '<audio controls>';
                         file_type_demo += '    <source src="'+msg.file_public_cdn+'" type="audio/mpeg">';
@@ -265,6 +352,40 @@
 
             }
 
+            function create_cfIn(){
+
+                var file_path = document.getElementById('file_path').innerHTML;
+
+                if (confirm("是否失效? path=./"+file_path) == true) {
+
+                    socket2.emit('create_cfIn',{ cfIn_file:file_path });
+
+                }                  
+
+            };
+
+            function find_cfIn(){
+                document.getElementById('find').className='btn-outline color-common disabled';
+                socket2.emit('find_cfIn');
+                clear();
+            };
+
+            function clear(){ //讓資料不重複post
+                result = [];
+            }
+
+           function remove() { 
+            document.getElementById('find').className='btn-outline color-common'
+             document.getElementById('pop').innerHTML = '';
+             result = [];
+           }
+
+           function error(err){
+                console.log(err)
+                browserMessage('錯誤', err);
+           }
+
+           
             var m_file=[], m_path=[], file_data=[], m_folder=[], unlock=true, date;
 
             function dragoverHandler(e){
@@ -297,17 +418,21 @@
 
             function dropHandler(evt) {//evt 為 DragEvent 物件
                 evt.preventDefault();
-
-                if(unlock){
+                var file_path = document.getElementById('file_path').innerHTML;
+                
+                if(unlock && file_path.indexOf('.') === -1&& socket2 !== null){
 
                     unlock = false;
-
+                    
+                    
                     if(m_file){
                         m_file = [];
                     }
-
+                    console.log(file_path.indexOf('.'))
+                    
                     date = new Date().getTime();
                     var items = evt.dataTransfer.items;
+                    
                     
                     for (var i=0; i<items.length; i++) {
                         // webkitGetAsEntry is where the magic happens
@@ -315,19 +440,40 @@
                         if (item) {
                             traverseFileTree(item);
                         }
-                    }
+                        
+                        var html_wait = '';
+                        var button_id = i + 'b';
 
+                
+
+
+                        html_wait += '<div>';
+                        //html_wait += '    <span id='+ i+'>等待上傳 : '+ file_path + item.name+'</span>';
+                        html_wait += '    <span id='+ i+'>等待上傳 : '+ file_path + item.name+'</span>';
+                        html_wait += '</div>';
+                        //html_wait +=  '<input  type="button" id='+ button_id+' value="test" onclick="cancel('+ i+','+ button_id+');">'
+                        
+                        document.getElementById("wait").innerHTML += html_wait;
+
+                        console.log(html_wait)
+                    }
+                    
+                    
+                }else if(file_path.indexOf('.') !== -1|| socket2 === null){
+                    browserMessage('警告', '路徑錯誤！！');
+                    
                 }else{
                     browserMessage('警告', '您還有檔案未上傳！！');
-                }
+                };
 
             }
-            window.onload = function (){
+            /*window.onload = function (evt){   //點選上傳
+                evt.preventDefault();
                 document.getElementById('file').addEventListener("change", function(){
-
+                    console.log(unlock)
                     if(unlock){
                         unlock = false;
-                        
+                        console.log(m_file)
                         if(m_file){
                             m_file = [];
                         }
@@ -335,19 +481,86 @@
                         date = new Date().getTime();
 
                         m_file = document.getElementById('file').files;
-                        
+                        console.log(document.getElementById('file'))
+                        console.log(m_file)
                         for(var i=0; i<m_file.length; i++){
                             m_path.push(document.getElementById('file_path').innerHTML);                        
                         }
                         
-                        var file = document.getElementById('file_path').innerHTML.split('/').pop();
-
+                        var file = new Array();
+                        file = document.getElementById('file_path').innerHTML.split('/');
+                        console.log(file);
+                        //file.pop();
+                        file = file.pop();
+                        console.log(file);
+                        console.log(file.indexOf('.'))
                         if(file.indexOf('.') == -1){
-
+                            console.log(m_path);
+                            console.log(typeof(m_file));
+                            console.log(m_file);
                             add_progress(m_file, m_path);
+                            m_path.length = 0;
+                            //m_file = [];
 
                         }else{
                             browserMessage('上傳錯誤', '路徑錯誤！！');
+                            m_file=[], m_path=[], file_data=[], m_folder=[], unlock=true
+                            console.log(m_file);
+                            //m_path = [];
+                            //m_file = {};
+                            //console.log(typeof(m_file.__proto__.item.name))
+                            //ocket2.emit('upload_error', { filedata: file_data , file_path: m_path });
+
+                            //socket2.once('even_file_end',function(){
+                            //    document.getElementById('file').value='';
+                            //});
+                            //add_progress(m_file, m_path);
+                        }
+
+                    }else{
+                        browserMessage('上傳', '上傳中！！');
+                    }
+
+                });
+            }*/
+            window.onload = function (evt){   //點選上傳
+                evt.preventDefault();
+                document.getElementById('file').addEventListener("change", function(){
+                    console.log(unlock)
+                    if(unlock){
+                        unlock = false;
+                        console.log(m_file)
+                        if(m_file){
+                            m_file = [];
+                        }
+
+                        date = new Date().getTime();
+
+                        m_file = document.getElementById('file').files;
+                        console.log(document.getElementById('file'))
+                        console.log(m_file)
+                        for(var i=0; i<m_file.length; i++){
+                            m_path.push(document.getElementById('file_path').innerHTML);                        
+                        }
+                        
+                        var file = new Array();
+                        file = document.getElementById('file_path').innerHTML.split('/');
+                        console.log(file);
+                        //file.pop();
+                        file = file.pop();
+                        console.log(file);
+                        console.log(file.indexOf('.'))
+                        if(file.indexOf('.') == -1 && socket2 !== null){
+                            add_progress(m_file, m_path);
+                            m_path.length = 0;
+                            //m_file = [];
+
+                        }else{
+                            console.log(m_file[0]);
+                            browserMessage('上傳錯誤', '路徑錯誤！！');
+                            m_file=[], m_path=[], file_data=[], m_folder=[], unlock=true
+                            document.getElementById('file').value='';
+                            console.log(m_file[0]);
                         }
 
                     }else{
@@ -357,19 +570,61 @@
                 });
             }
 
+            
+
+            
+            function cancel(){
+                m_file=[], m_path=[], file_data=[], m_folder=[], unlock=true
+                document.getElementById("wait").innerHTML="";
+            }
+
+            function cancelStatus(){
+                document.getElementById("status").innerHTML="";
+            }
+
             function uploadtest(){
                 console.log(m_file, m_folder);
+
+                document.getElementById("wait").innerHTML="";
+                console.log(m_path[0]);
+                console.log(file_data);
+                //file = m_path.split('/');
+                //file = file.pop();
+                
+                if(m_path[0] === undefined){
+                    browserMessage('警告', '請先放置檔案！！');
+                }else{
                 
                 for (let index = 0; index < m_folder.length; index++) {
                     socket2.emit('add_folder', { add_folder : (m_folder[index]) });
                 }
                 
                 setTimeout(function(){}, 5000);
-
+                console.log(m_path);
                 add_progress(m_file, m_path);
+                m_path.length = 0;
+                }
+                
             }
 
             function add_progress(m_file, m_path){
+                document.getElementById("status").innerHTML =''; //上傳狀態
+                var html_status = '';
+                /*html_status += '<div class="loading color-error">';
+                html_status += '<span class="loading-text">UpLoading</span>';
+                html_status += '</div>';*/
+                html_status +='<div class="notice notice-corner color-warning animate bounceIn">';
+                html_status +='<a class="close" onclick="cancelStatus();">×</a>';
+                html_status +='<h6 class="notice-title">Please Wait!</h6>';
+                html_status +='<p class="notice-text">Now Uploading...</p>';
+                html_status +='</div>';
+                        
+                document.getElementById("status").innerHTML += html_status;
+
+                
+                console.log(m_file[0]);
+                console.log(m_path);
+
 
                 var html_pg = '';
 
@@ -399,17 +654,43 @@
 
             function upload_file(m_path){
 
-                if(m_file.length){
+                //if(m_file.length){
+                    console.log(file_data);
+                    console.log(socket2);
+                    if(socket2 === null){
+                        browserMessage('警告', '路徑錯誤！！');
+                    }else{
+                        socket2.emit('upload_file_data', { filedata: file_data , file_path: m_path });
 
-                    socket2.emit('upload_file_data', { filedata: file_data , file_path: m_path });
+                        socket2.once('even_file_end',function(){
+                            m_path=[], file_data=[], m_folder=[]
+                            document.getElementById('file').value='';
+                            document.getElementById("status").innerHTML ='';
+                            var html_status = '';
+                            /*html_status += '<div>';
+                            html_status += '    <span>上傳狀態 : Complete</span>';
+                            html_status += '</div>';*/
+                            html_status +='<div class="notice notice-corner color-success animate bounceIn">';
+                            html_status +='<a class="close" onclick="cancelStatus();">×</a>';
+                            html_status +='<h6 class="notice-title">Notice!</h6>';
+                            html_status +='<p class="notice-text">File Upload Complete</p>';
+                            html_status +='</div>';
+                            
+                            
+                        
+                            document.getElementById("status").innerHTML += html_status;
+                        });
+                    }
+                //}
+                /*else{
+                    browserMessage('上傳錯誤', '選擇檔案！！');
+                    console.log(file_data);
+                    socket2.emit('upload_error', { filedata: file_data , file_path: m_path });
 
                     socket2.once('even_file_end',function(){
                         document.getElementById('file').value='';
                     });
-
-                }else{
-                    browserMessage('上傳錯誤', '選擇檔案！！');
-                }
+                }*/
 
             }
 
@@ -417,30 +698,35 @@
 
     </head>
 
-    <body style="background-color: rgb(150,150,150);">
+    <body style="background-color: rgb(200,200,180);">
 
        <div class="columns-12">
 
             <div class="col-12">
                 <h1>{{ head }}</h1>
                 <h2>Online : <span id='online'></span></h2>
+                <div class="col-6">
+                        <a class="btn-outline color-common" onclick="location.href='/logout'">登出</a>    
+                    </div>
             </div>
+
+            
 
             <div class="col-3" style="height:80vh;overflow-y:auto;">
                 <div class="columns-12">
 
-                    <div class="col-6">
+                    <!--<div class="col-6">
                         <div class="input-grp">
                             <input type="text" class="ctrl-input" id="addBucket" />
                             <span class="input-grp-btn">
-                                <a class="btn" onclick="add_bucket();" >建立桶</a>
+                                <a class="btn-outline color-common" onclick="add_bucket();" >建立桶</a>
                             </span>
                         </div>
-                    </div>
+                    </div>  -->
 
                     <div class="col-6">
                         <div class="drop drop-hover" id="bucketName">
-                            <a class="btn">Bucket Name <span class="caret"></span></a>
+                            <a class="btn-outline color-common">Bucket Name <span class="caret"></span></a>
                         </div>
                     </div>
 
@@ -452,16 +738,20 @@
             <div class="col-6">
                 <div class="columns-12">
 
+                        
+
                     <div class="col-6">
-                        <a class="btn" onclick="del_file();">刪除檔案</a>
+                        <a class="btn-outline color-common" onclick="del_file();">刪除檔案</a>
                         <!-- <a class="btn" onclick="del_cdn_cache();">清除CDN快取</a> -->
                     </div>
+
+                    
 
                     <div class="col-6">
                         <div class="input-grp">
                             <input type="text" class="ctrl-input" id="folder_name" />
                             <span class="input-grp-btn">
-                                <a class="btn" onclick="add_folder();">建立資料夾</a>
+                                <a class="btn-outline color-common" onclick="add_folder();">建立資料夾</a>
                             </span>
                         </div>
                     </div>
@@ -476,19 +766,27 @@
 
             <div class="col-3" style="position:fixed;right:0px;top: 40px;">
                 <span id="file_path" style="display:none"></span>
-                <ul class="crumb">
-                    <li class="crumb-text">您目前的位置：</li>
-                    <span id="path"></span>
+                <ul class="crumb" style="color:black">
+                    <li class="crumb-text"></li>您目前的位置：</li>
+                    <li id="path" style="color:black"></li>
                 </ul>
+                
+                <span id="wait"></span>
 
                 <label for="file" class="ctrl-upload flex-media"  ondragover="dragoverHandler(event)" ondrop="dropHandler(event)" style="height:10vh;">
-                    <input type="file" id="file"  multiple/>
-                    <span class="ctrl-upload-caption">Upload File or Drop Folder</span>
+                    <input type="file" id="file"  multiple/>  
+                    <span class="ctrl-upload-caption">Drop File or Drop Folder</span> 
                 </label>
 
-                <button onclick="uploadtest();">全部上傳</button>
+                <!--<input type="button" value="全部上傳"  onclick="uploadtest()" style="width:100px;height:35px;"> -->
+                <a class="btn-outline color-common" onclick="uploadtest();">全部上傳</a>
+                <a class="btn-outline color-common" onclick="cancel();">取消上傳</a>
+                
+                <span id="status"></span>
+                        
 
                 <label>上傳佇列 : </label>
+               
                 <div class="columns-12" id="pg" style="height:40vh;overflow-y:auto;">
 
                 </div>

@@ -1,0 +1,77 @@
+server {
+  listen   80 proxy_protocol; ## listen for ipv4; this line is default and implied
+  #listen   [::]:80 default_server ipv6only=on; ## listen for ipv6
+  #set_real_ip_from 0.0.0.0/0;
+  set_real_ip_from 172.31.0.0/16;
+
+  real_ip_header proxy_protocol;
+
+  server_name "~^u-(?P<IP0>\d{1,3})-(?P<IP1>\d{1,3})-(?P<IP2>\d{1,3})-(?P<IP3>\d{1,3})-(?P<forwarded_port>\d{4,5})\.supremeclub\.mobi$";
+
+  error_log   /dev/null   crit;
+
+  #if ($http_x_forwarded_proto != 'https') {
+  #  return 301 https://$host$request_uri;
+  #}
+#  return 301 https://u-$IP0-$IP1-$IP2-$IP3-$forwarded_port.u-show777.online$request_uri;
+
+  # Set HSTS to 365 days
+  add_header Strict-Transport-Security 'max-age=31536000; includeSubDomains';
+
+  location / {
+      proxy_pass http://$IP0.$IP1.$IP2.$IP3:$forwarded_port;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection 'upgrade';
+      proxy_set_header Host $host;
+     #proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Real-IP $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  location ~* \.io {
+      proxy_set_header X-Real-IP $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Host $http_host;
+      proxy_set_header X-NginX-Proxy true;
+
+      proxy_pass http://$IP0.$IP1.$IP2.$IP3:$forwarded_port;
+      proxy_redirect off;
+
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+  }
+}
+
+
+server {
+  listen   80; ## listen for ipv4; this line is default and implied
+  #listen   [::]:80 default_server ipv6only=on; ## listen for ipv6
+  #set_real_ip_from 0.0.0.0/0;
+
+  server_name "~^(?P<agents>.+)-kiosk\.supremeclub\.mobi$";
+
+  error_log   /dev/null   crit;
+
+  location / {
+    return 302 https://supremeclub.mobi/$agents;
+  }
+
+}
+
+server {
+  listen   80; ## listen for ipv4; this line is default and implied
+  #listen   [::]:80 default_server ipv6only=on; ## listen for ipv6
+  #set_real_ip_from 0.0.0.0/0;
+
+  server_name "~^(?P<agents>.+)\.supremeclub\.mobi";
+
+  error_log   /dev/null   crit;
+
+  location / {
+    return 302 https://supremeclub.mobi/player/$agents;
+  }
+}
+
+

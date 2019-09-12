@@ -38,8 +38,8 @@
         <script>
 
             //POPUP.install(10000);
-            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+ {{socketPort}}+'/server'); //本機測試用
-            //var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':443'+'/server');  //測試機https用
+            //var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':'+ {{socketPort}}+'/server'); //本機測試用
+            var socket = io.connect(window.location.protocol+'//'+window.location.hostname+':443'+'/server');  //測試機https用
             var socket2= null;
             socket.emit('getBucketList',{userInfo:'{{ title }}'})
             var bucketName='';
@@ -151,8 +151,8 @@
                             if(socket2){
                                 socket2.disconnect();
                             }
-                            socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/'+bucketName);//每個bucketname增加一個socket
-                            //socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':443'+'/'+bucketName);
+                            //socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':'+{{ socketPort }}+'/'+bucketName);//每個bucketname增加一個socket
+                            socket2 = io.connect(window.location.protocol+'//'+window.location.hostname+':443'+'/'+bucketName);
                             socket2.on('get_list', function(data){
                                 console.log(data);
 

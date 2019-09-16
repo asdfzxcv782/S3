@@ -4,6 +4,6 @@ COPY . /workspace
 WORKDIR /workspace
 RUN npm install
 
-EXPOSE 3000
+EXPOSE 9697
 
 CMD npm start

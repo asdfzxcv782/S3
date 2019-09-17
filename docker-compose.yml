@@ -1,0 +1,9 @@
+version: '3.6'
+services:
+  docker-nodejs-tutorial:
+    image: docker-nodejs-tutorial
+    build: .
+    environment:
+      NODE_ENV: production
+    ports:
+      - 9697:9697

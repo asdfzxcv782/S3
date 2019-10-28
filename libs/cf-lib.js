@@ -27,12 +27,17 @@ CFlib.prototype.listInvalidations = function (bucket,callback) {
     MaxItems: '10',
   };
   this.cloudfront.listInvalidations(params, function(err, data) {
+      console.log(data);
       if (err) {
         callback(false,'',err.code);
       }
-      else if(data.InvalidationList.IsTruncated === false){
+      else if(data.Items.length === 0){
 
         callback(false,'','沒有失效可查詢')
+      }else if(data.Items.length<5){
+        for(let i=0;i<data.Items.length;i++){
+          this.getInvalidation(data.Items[i].Id, bucket_Id,callback,bucket); 
+        };   
       }else{
         for(let i=0;i<5;i++){
           this.getInvalidation(data.Items[i].Id, bucket_Id,callback,bucket); 

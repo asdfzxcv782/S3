@@ -2,8 +2,28 @@ body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-a {
+/*a {
   color: black;
+}*/
+
+a:link{
+  text-decoration:none;
+  color: red;
+  /*background-color:#ffffff;*/
+  }
+a:visited {
+  color:#ffffff;
+  background-color:red;
+}
+a:hover {
+  text-decoration:underline;
+  /*background-color:#fafafa;*/
+  color:gray;
+}
+a:active {
+  text-decoration:none;
+  background-color:gray;
+  color:#fafafa;
 }
 
 .popup {

@@ -3,6 +3,8 @@
 
 var AWS = require('aws-sdk');
 var aws_key = require('../config/aws_key.js');
+const redis = require('redis');
+const client = redis.createClient();
 
 function s3_function(){
 
@@ -112,54 +114,94 @@ s3_function.prototype.addBucketCros = function (bucketName) {
  * game_list css & pic file
  * @param {string} bucket aws_s3
  */
-s3_function.prototype.get_game_file_list = function(bucket,callback){
+s3_function.prototype.get_game_file_list = function(bucket,needUpdate,callback){
     //params.Marker = marker
-    var params = {
-        Bucket:bucket,        //required
-        Marker: ''
-    };
-    var folder_list = [];
-    //this.s3client.listObjectsV2(params, function(err,data){
-        this.s3 = () => {
-        this.s3client.listObjects(params, function (err,data){
-            if (err) {
-                console.log("Error:", err);
-                callback(err);
-            }else {
-                console.log(data);
-                //var folder_list = [];
-                if(data.IsTruncated){
-                    for (var index=0; index<data.Contents.length; index++) {
-                        var s3 = data.Contents[index];
-                        folder_list.push(s3.Key);
-                    }
-                    params.Marker = data.Contents[data.Contents.length-1].Key
-                    this.s3();
-                    /*this.s3client.listObjects(params, function (err,data){
-                        for (var index=0; index<data.Contents.length; index++) {
-                            var s3 = data.Contents[index];
-                            folder_list.push(s3.Key);
+    client.get(`${bucket}`, (error, result) => {
+        if (error) {
+          console.log(error);
+          throw error;
+        }else if(result === null || needUpdate === true || bucket === 'ushows3atsg'){
+            var params = {
+                Bucket:bucket,        //required
+                Marker: ''
+            };
+            var all_list = {};
+            var folder_list = [];
+            //this.s3client.listObjectsV2(params, function(err,data){
+            this.s3 = () => {
+                this.s3client.listObjects(params, function (err,data){
+                    if (err) {
+                        console.log("Error:", err);
+                        callback(err);
+                    }else {
+                        console.log(data);
+                        //var folder_list = [];
+                        if(data.IsTruncated){
+                            for (var index=0; index<data.Contents.length; index++) {
+                                var s3 = data.Contents[index];
+                                all_list[s3.Key] = s3;
+                                folder_list.push(s3.Key);
+                            }
+                            params.Marker = data.Contents[data.Contents.length-1].Key
+                            this.s3();
+                            /*this.s3client.listObjects(params, function (err,data){
+                                for (var index=0; index<data.Contents.length; index++) {
+                                    var s3 = data.Contents[index];
+                                    folder_list.push(s3.Key);
+                                }
+                                console.log(folder_list)
+                                this.s3();
+                            })*/
+                        }else{
+                            for (var index=0; index<data.Contents.length; index++) {
+                                var s3 = data.Contents[index];
+                                all_list[s3.Key] = s3;
+                                folder_list.push(s3.Key);
+                            }
+                            console.log(folder_list);
+                            callback(folder_list);
+                            client.set(`${bucket}`, JSON.stringify(folder_list), redis.print);//給 get_game_file_list 用
+                            client.set(`all_${bucket}`, JSON.stringify(all_list), redis.print);//給 get_file_info 用
                         }
-                        console.log(folder_list)
-                        this.s3();
-                    })*/
-                }else{
-                    for (var index=0; index<data.Contents.length; index++) {
-                        var s3 = data.Contents[index];
-                        folder_list.push(s3.Key);
+                        // this.sio.emit('get_list', { get_list: folder_list });
                     }
-                    callback(folder_list);
-                }
-                // this.sio.emit('get_list', { get_list: folder_list });
+                    
+                }.bind(this));
             }
-            
-        }.bind(this));
-    }
-    this.s3();
+            this.s3();
+        }else{
+            //console.log('GET result ->' + result);
+            console.log('read in cache')
+            callback(JSON.parse(result));
+        }
+        
+        
+    });
 };
 
 s3_function.prototype.get_file_info = function(bucket,file_path, callback){
-    var params = {
+    //const redis_path = 
+    client.get(`all_${bucket}`, (error, result) => {
+        if (error) {
+          console.log(error);
+          throw error;
+        }else{
+            //console.log(result);
+            if(file_path === ''){
+                console.log('get_bucketself')
+            }else{
+                const data1 = JSON.parse(result);
+                callback({
+                    file_name:data1[file_path].Key,
+                    file_size: data1[file_path].Size,
+                    file_LastModified:data1[file_path].LastModified,
+                    file_public_s3:'https://s3-ap-southeast-1.amazonaws.com/'+ bucket +'/'+data1[file_path].Key,
+                    file_public_cdn:'https://cdn' + bucket.replace("game", "") + '.u-show777.online/' + data1[file_path].Key
+                });
+            }
+        }
+    });
+    /*var params = {
         Bucket:bucket,        //required
         Prefix:file_path
     };
@@ -184,7 +226,7 @@ s3_function.prototype.get_file_info = function(bucket,file_path, callback){
                 // });
             }
         }
-    }.bind(this));
+    }.bind(this));*/
 };
 
 /**
@@ -326,6 +368,7 @@ s3_function.prototype.get_file_list = function(bucket,prefix, callback){
         if (err) {
             console.log("Error:", err);
         }else {
+            console.log(data);
             var folder_list = {};
             var tmp_array =[];
             
@@ -345,6 +388,7 @@ s3_function.prototype.get_file_list = function(bucket,prefix, callback){
                 }
 
             }
+            console.log(folder_list);
             callback(folder_list);
             //this.sio.emit('get_list', { get_list: JSON.stringify(folder_list) });
         }

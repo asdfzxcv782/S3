@@ -1,0 +1,14 @@
+https://master-tw.u-show777.online socket密碼 rest2351700
+
+master -> manager -> server
+
+master: master主要處理後台的建立,刪除,查詢等請求,處理,收集Manager的資料 
+
+manager: manager定時將伺服器資訊回傳(socket)給master 內容為軟體資訊,伺服器硬體狀態,服務數量 manager 旁邊的restart按了 遊戲會全都不見
+
+Services 分為兩類 大廳 Lobby 遊戲 Game 大廳 Services 代表在選擇遊戲畫面的數量 ,  大廳 Game 代表在遊戲執行中的數量, 大廳裡面的log 可以看到user的動作 可以對照機台(黑色資料夾)
+
+裡面的機台帳號
+
+
+釋放硬碟空間刪除log gt-game-integration/gtlog/ 裡面

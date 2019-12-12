@@ -6,12 +6,12 @@
         <title>{{ title }}</title>
 
         <!-- Kule lazy -->
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-lazy.min.css" type="text/css" />
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-base.min.css" type="text/css" />
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-grid.min.css" type="text/css" />
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-animates.min.css" type="text/css" />
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/css/kule-theme-default.min.css" type="text/css" />
-        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.160612/js/kule.urbrowser.min.js"></script>
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.170618/css/kule-lazy.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.170618/css/kule-base.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.170618/css/kule-grid.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.170618/css/kule-animates.min.css" type="text/css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.170618/css/kule-theme-default.min.css" type="text/css" />
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/kule.lazy/3.1.170618/js/kule.urbrowser.min.js"></script>
 
         <!-- Socket io -->
         <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.6/socket.io.min.js"></script>
@@ -148,6 +148,8 @@
                         menuA.onclick = (e)=>{
                             bucketName = e.target.innerHTML;
                             socket.emit('setBucketName', { setBucketName:bucketName });
+                            //document.getElementById('file_tree').innerHTML = '<img src="/images/loading1.svg">';
+                            document.getElementById('file_tree').innerHTML = '<div class="loading"><span class="loading-text">Loading</span></div><div class="overlay"></div>';
                             if(socket2){
                                 socket2.disconnect();
                             }
@@ -160,6 +162,7 @@
 
                                 for(var key in data.get_list){
                                     var tmp = data.get_list[key].split('/');
+                                    console.log(tmp);
                                     file_tree.addFolder(tmp);
                                 }
                                 document.getElementById('file_info').innerHTML = '';
@@ -234,6 +237,8 @@
                 for(var key in data.get_list){
 
                     var tmp = data.get_list[key].split('/');
+
+                    console.log(tmp);
 
                     file_tree.addFolder(tmp);
 
@@ -332,6 +337,7 @@
 
                     if(file.indexOf('.') == -1){
                         socket2.emit('add_folder', { add_folder : (file_path+folder_name+'/') });
+                        document.getElementById('file_tree').innerHTML = '<div class="loading"><span class="loading-text">Loading</span></div><div class="overlay"></div>';
                         document.getElementById('folder_name').value = '';
                     }else{
                         browserMessage('新增資料夾錯誤', '路徑錯誤！！');
@@ -349,6 +355,7 @@
                 if (confirm("是否刪除? path=./"+file_path) == true) {
 
                     socket2.emit('del_file', { del_file:file_path });
+                    document.getElementById('file_tree').innerHTML = '<div class="loading"><span class="loading-text">Loading</span></div><div class="overlay"></div>';
 
                 }
 
@@ -361,7 +368,7 @@
                 if (confirm("是否失效? path=./"+file_path) == true) {
 
                     socket2.emit('create_cfIn',{ cfIn_file:file_path });
-
+                    document.getElementById('file_tree').innerHTML = '<div class="loading"><span class="loading-text">Loading</span></div><div class="overlay"></div>';
                 }                  
 
             };
@@ -599,6 +606,7 @@
                 
                 for (let index = 0; index < m_folder.length; index++) {
                     socket2.emit('add_folder', { add_folder : (m_folder[index]) });
+                    document.getElementById('file_tree').innerHTML = '<div class="loading"><span class="loading-text">Loading</span></div><div class="overlay"></div>';
                 }
                 
                 setTimeout(function(){}, 5000);
@@ -681,6 +689,7 @@
                             
                         
                             document.getElementById("status").innerHTML += html_status;
+                            document.getElementById('file_tree').innerHTML = '<div class="loading"><span class="loading-text">Loading</span></div><div class="overlay"></div>';
                         });
                     }
                 //}
@@ -734,7 +743,7 @@
 
                 </div>
 
-                <div id="file_tree" style="padding-top:10px;"></div>
+                <div id="file_tree" style="padding-top:10px;overflow:auto;"></div> 
             </div>
 
             <div class="col-6">

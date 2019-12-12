@@ -1,0 +1,112 @@
+:AWS帳號:ushow@u-show777.com 密碼:shay45:mores
+
+NAS帳號 192.168.1.112:5001 進階 ---> 繼續不安全瀏覽
+
+domain name 申請 在https://www.name.com 購買domain name 再到cloudflare 新增domain
+
+https://dev.u-show777.com/usAdmin後臺管理 帳號密碼都是 usadmin
+
+SSL 憑證 從comodo 給的ZIP 匯入 ALB裡 然後EC2裡面伺服器參數調整(nginx找不到ssL的設定 因為在aws elb的介面上就解掉了) SSL 憑證帳密 u-show777 !Shay45:mores
+
+要新增資料庫使用者 修改RDS的inbound
+
+ELB 裡面對應的是 Nginx-AS-Online (3.1.32.119)
+
+tomcat ALB 對應的是 Tomcat-Server (MY)(3.1.74.117) 
+
+tomcat ALB-TW 對應的是 Tomcat-Server (TW) (54.169.114.11)
+
+S3 uploadfile (測試機)http://s3.u-show777.com/  帳號:ushow passwd:vshow2351700 進入的話先進測試機ushow這個帳號 pm2裡的server path:~/s3_uploads
+
+S3 掛載 df-h 有出現 s3-fs就是有掛載s3的ushows3atsg的 bucket
+
+S3 mnt環境 http://blog.darkwing.co/2016/12/%E5%9C%A8ubuntu%E4%B8%AD-%E4%BD%BF%E7%94%A8s3fs%E6%8E%9B%E8%BC%89aws-s3-butcket-%E8%AE%93%E4%BD%BF%E7%94%A8-s3-storage-%E5%B0%B1%E5%83%8F%E5%9C%A8%E4%BD%BF%E7%94%A8%E6%9C%AC%E6%A9%9F%E7%A1%AC%E7%A2%9F/
+
+S3 掛載程序 IAM KEY 存在 /etc/passed-s3fs 輸入: sudo s3fs game7pk(bucket名稱) -o(參數前+ -o) allow_other /mnt2(目標資料夾) -o passwd_file=/etc/passwd-s3fs(IAMKEY 資料夾)
+
+ -o default_acl=public-read-write -o umask=000 -o uid=1000 -o gid=1000(權限相關)
+
+sudo s3fs ushows3atsg -o allow_other /mnt/s3-upload/ -o passwd_file=/etc/passwd-s3fs -o default_acl=public-read-write -o umask=000 -o uid=1000 -o gid=1000
+
+S3卸載  sudo fusermount -u /mnt2
+
+cloudflare 裡面有短網址對應到相對應的DNS ex: 888gaming.online 對應到new-as-1969504071.ap-southeast-1.elb.amazonaws.com(ELB的DNS)
+
+多國圖床布置(cloudfront):
+	cloudfront 左上建立分布 ---> 選擇web ---> 檢視器通訊協定政策(重新導向HTTP到HTTPS) ---> 使用自己的SSL 憑證
+	--->限制儲存貯體存取(是) --->源存取身分(使用現有身分)--->您的身分acess-identity-ushow-sdn
+Tomcat-Server路徑:cd /home/ushowcat/apache-tomcat-8.0.36
+
+2019/3/25 在https://dev.u-show777.com 出現bad gateway 502 --> reload 之後莫名好了(再尋找原因)原因是tomcat的設定被修改了 --> 59.125.155.188(dev1) 帳號ushow nginx設定檔都在/etc/nginx/site-available
+
+--> log檔在/var/log/nginx 錯誤是在[error] 10211#10211: *64588 connect() failed (111: Connection refused) while connecting to upstream
+
+-->錯誤的地方是在site-available裡面的 tomcat  網路上查有把ip改成127.0.0.1
+
+2019/4/2 dev(local測試機) 重啟的話 mysql 那邊或許會有一些log檔案不見導致mysql無法開啟 and nginx可能要先把 tomcat伺服器關閉 等nginx 伺服器開啟後再開啟tomcat(原因是socket leaks)
+
+2019/4/3 修復出現502原因(SELinux) semanage port --list -->沒有1337 port --> semanage port --add --type http_port_t --proto tcp 1337 -->加入1337port
+
+2019/4/8 修改nginx設定 --> 到site-avaliable 修改設定 --> 把site-enable 指向到 site-avaliable的設定檔 sudo ln -s -b ../sites-available/supremeclubmobi supremeclubmobi 
+
+2019/4/9 nginx 網址切割 設定在nginx as online 裡的/etc/nginx/master  ~^u-(?P<IP0>\d{1,3}) ~ --> 不分大小寫  ^開頭是u ?P<IP0> 設為IP0變數 \d{1,3} --> 1-3位數字
+
+2019/4/12 重灌一台ubuntu + mysql + apache tomcat  
+	
+	  apache tomcat 參考 https://linuxize.com/post/how-to-install-tomcat-9-on-ubuntu-18-04/
+
+	  mysql 安裝參考 https://ywnz.com/linuxysjk/1832.html --> mysql -u root -p 輸入密碼登入
+
+          修改root登入方式and增加其他使用者能登入  https://stackoverflow.com/questions/39281594/error-1698-28000-access-denied-for-user-rootlocalhost
+
+   	  外機無法連入mysql --> sudo netstat -an|grep 3306 --> tcp        0      0 127.0.0.1:3306            0.0.0.0:*               LISTEN -->
+
+	  cd /etc/mysql/mariadb.conf.d/ --> vi 50-server.cnf --> bind-address = 0.0.0.0 -->  udo netstat -an|grep 3306 改變成 0.0.0.0:3306
+	  
+	  參考 https://dzer.me/2016/05/04/ubuntu-%E5%BC%80%E5%90%AFmysql%E8%BF%9C%E7%A8%8B%E8%BF%9E%E6%8E%A5/
+
+	  開啟ubuntu 內建防火牆 sudo ufw allow in 3306 允許3306port
+
+2019/5/31 重灌一台反向代理
+	  灌Nginx https://www.howtoing.com/how-to-install-nginx-on-ubuntu-18-04/
+2019/6/10 tomcat需要灌swap 
+	  https://codertw.com/%E4%BC%BA%E6%9C%8D%E5%99%A8/375209/
+2019/6/10 tomcat 需要掛s3, game 需要掛遊戲伺服器
+2019/6/12 新增資料庫並給予權限
+	  Grant all privileges on myUshowGame.* to ushow_user@'%';
+flush privileges; 
+2019/6/20  新增RDS資料庫 需要去修改  Parameter groups 的設定
+2019/7/1 測試機又遇到socket leaks 問題(目前應該是 systemctl start nginx.service 啟動相關的問題) 用/usr/sbin/ 執行 nginx 來解決
+
+2019/7/9  測試機掛載NAS  sudo mount -t cifs //59.125.155.187/工程部 -o username=asdfzxcv7821,password=101030226l,iocharset=utf8 /mnt/NAS
+	  sudo mount -t cifs //59.125.155.187/工程部 -o username=asdfzxcv7821,password=101030226l,vers=1.0,iocharset=utf8 /mnt/NAS
+	  正式機可能會有錯誤 參照https://blog.csdn.net/u012188065/article/details/90233864
+
+2019/7/10 logrotate 分割 https://www.cnblogs.com/276815076/p/7053640.html
+2019/7/11 正式機分割 上傳tomcatlog.sh --> 修改tomcatlog.sh --> NAS s3 新增資料夾 --> /etc/logrotate 新增分割文件 --> vi MyCrontab 新增定時 crontab ~/MyCrontab
+2019/7/12 cq9(MY) s3上傳檔案網頁 s3.cq9.mobi 帳號:cq9mobi 密碼:cq9mobi
+
+2019/9/4  Nas root 帳號:admin 密碼:vshow2351700
+
+2019/10/2 59.125.155.237 測試機mysql 無法啟動 目前解決方法是 在/etc/mysql/mariadb.conf.d 裡面的 50-server.cnf中的 binglog_format = MIXED這個參數失效 把這參數刪掉就能開啟了
+
+2019/10/2 S3 S3和Cloudfront的跨域請求 1.在S3 Cors設定裡面 -->  <AllowedHeader>*</AllowedHeader> 2.cloudfront 設定行為
+
+2019/10/2 S3 有更新 docker-compose指令 docker-compose stop --> docker-compose up -d --build
+
+2019/10/7 測試機開新遊戲 修改newUshowGame/gameserver裡面的 ecosystem.config.js 和 config/config.json --> git checkout branch --> git pull --> 修改資料庫的game,gameCommon
+	  --> pm2 start ecosystem.config.js --env 參數
+
+2019/10/21 遠端SSH 啟動anaconda ex:ssh ushow@59.125.155.237 -p 22 bash -l '/home/ushow/check.sh'  也許不成功 --> 先到.bashrc 那邊設定 # If not running interactively, don't do anything  
+	  這段文字的參數搬到檔案的最下面 就能成功了
+
+2019/10/22 AWS RDS的SSL連線 目前測試 mysql -h supremedb.cmcyjqtvztxf.ap-southeast-1.rds.amazonaws.com -u my_user -p 這個帳號是連不上去的 因為有做SSL的限制 要加
+	   --ssl-ca=/home/ushow/rds-combined-ca-bundle.pem --ssl-verify-server-cert上去啟用SSL連線
+
+2019/10/23 select * from information_schema.processlist; 可以查出有多少連線數 supreme 有500多條
+
+
+
+
+
+

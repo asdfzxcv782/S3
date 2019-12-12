@@ -81,7 +81,7 @@ function folder_GT(pele, name, path, main,  file)
         this.subElement.appendChild(this.folderArea);
         this.mainElement.onclick = this.open.bind(this);
         //this.mainElement.click();
-        this.mainElement.className = `folder_${name}`;
+        this.mainElement.className = `folder`;
         if(name === path[0]){
             console.log('click')
             this.subElement.style.display = 'block';

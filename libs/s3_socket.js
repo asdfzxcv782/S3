@@ -97,7 +97,7 @@ s3Socket.prototype.socketHandler = function(socket){
     //socket.emit('get_buckets_list', { get_buckets_list:this.allbucket }); //43 - 50
 
     socket.on('setBucketName', function(data){
-            this.s3.get_game_file_list(data.setBucketName, function(data){
+            this.s3.get_game_file_list(data.setBucketName, false,function(data){
                         socket.emit('get_list', { get_list: data });            
             });
         
@@ -213,8 +213,7 @@ s3Socket.prototype.uploadFileStream = function(bucket, chat, socket, stream){
                     console.log('del tmp file : ' + file_data_tmp_path);
                 });
             }
-
-            this.s3.get_game_file_list(bucket, function(data){
+            this.s3.get_game_file_list(bucket,true,function(data){
                     chat.emit('get_list', { get_list: data });
             });
 
@@ -285,7 +284,7 @@ s3Socket.prototype.getFileInfo = function(bucket, socket, msg){
 s3Socket.prototype.addFolder = function(bucket, chat, socket, msg){
     this.s3.add_folder(bucket, msg.add_folder, function(data, err){
         if(data){
-            this.s3.get_game_file_list(bucket, function(data){
+            this.s3.get_game_file_list(bucket,true, function(data){
                 chat.emit('get_list', { get_list: data });
             });
         }else{
@@ -298,7 +297,7 @@ s3Socket.prototype.delFile = function(bucket, chat, socket, msg){
     //console.log(msg);
     this.s3.del_file(bucket,msg.del_file, function(data, err){
         if(data){
-            this.s3.get_game_file_list(bucket, function(data){
+            this.s3.get_game_file_list(bucket,true, function(data){
                 chat.emit('get_list', { get_list: data });
             });
         }else{
@@ -312,7 +311,7 @@ s3Socket.prototype.createcfIn = function(bucket, chat, socket, msg){
     this.cf.createInvalidation(bucket,msg.cfIn_file,function(res,data,err){
         if(res){
             this.server.emit('succes',{ sucCode: data });
-            this.s3.get_game_file_list(bucket, function(data){
+            this.s3.get_game_file_list(bucket, false,function(data){
                 chat.emit('get_list', { get_list: data });
             });
         }

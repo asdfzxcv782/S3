@@ -307,7 +307,7 @@ s3Socket.prototype.delFile = function(bucket, chat, socket, msg){
 };
 
 s3Socket.prototype.createcfIn = function(bucket, chat, socket, msg){
-    //console.log(msg);
+    console.log(msg);
     this.cf.createInvalidation(bucket,msg.cfIn_file,function(res,data,err){
         if(res){
             this.server.emit('succes',{ sucCode: data });

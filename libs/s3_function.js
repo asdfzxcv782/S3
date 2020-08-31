@@ -275,6 +275,7 @@ s3_function.prototype.del_file = function(bucket,file_name,callback){
             params.Delete.Objects.push({Key: content.Key});
         });
 
+        console.log(params.Delete)
         this.s3client.deleteObjects(params, function(err, data) {
             if (err){
                 // console.log(err, err.stack); // an error occurred

@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "dependencies": {
-    "aws-sdk": "^2.4.10",
+    "aws-sdk": "^2.814.0",
     "basic-auth": "^1.0.4",
     "body-parser": "^1.15.2",
     "express": "^4.14.0",

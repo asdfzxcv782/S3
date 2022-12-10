@@ -6,8 +6,8 @@
   "dependencies": {
     "aws-sdk": "^2.4.10",
     "basic-auth": "^1.0.4",
-    "body-parser": "^1.15.2",
-    "express": "^4.14.0",
+    "body-parser": "^1.20.1",
+    "express": "^4.18.2",
     "nunjucks": "^2.4.2",
     "socket.io": "^1.4.8",
     "socket.io-stream": "^0.9.0"
